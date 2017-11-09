@@ -1,5 +1,5 @@
-// Package fileutil holds various things this suite needs for easier
-// identification and processing of files
+// Package fileutil holds various general utilities for working with the
+// filesystem more easily
 package fileutil
 
 import (
