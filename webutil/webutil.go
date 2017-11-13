@@ -30,6 +30,7 @@ var FuncMap = tmpl.FuncMap{
 	"RawCSS":     RawCSS,
 	"IncludeJS":  IncludeJS,
 	"RawJS":      RawJS,
+	"Webroot":    func() string { return Webroot },
 }
 
 // FullPath uses the webroot, if not empty, to join together all the path parts
