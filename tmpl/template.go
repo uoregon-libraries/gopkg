@@ -136,3 +136,9 @@ func (t *TRoot) MustBuild(path string) *Template {
 	}
 	return tmpl
 }
+
+// Template returns an empty template associated with this TRoot so we can use
+// it for errors without fake "empty" templates
+func (t *TRoot) Template() *Template {
+	return t.Clone().template
+}
