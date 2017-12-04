@@ -11,35 +11,58 @@ import (
 	"time"
 )
 
-type logLevel string
+// LogLevel restricts log levels to a python-like set of numbers
+type LogLevel int
 
+// Python-like LogLevel constants
 const (
-	debug logLevel = "DEBUG"
-	info  logLevel = "INFO"
-	warn  logLevel = "WARN"
-	err   logLevel = "ERROR"
-	crit  logLevel = "CRIT"
+	Debug LogLevel = 10
+	Info  LogLevel = 20
+	Warn  LogLevel = 30
+	Err   LogLevel = 40
+	Crit  LogLevel = 50
 )
 
-// Logger holds basic data to format log messages
-type Logger struct {
+// Loggable defines a simple Log method loggers have to implement
+type Loggable interface {
+	Log(LogLevel, string)
+}
+
+var logLevelStrings = map[LogLevel]string{
+	Debug: "DEBUG",
+	Info:  "INFO",
+	Warn:  "WARN",
+	Err:   "ERROR",
+	Crit:  "CRIT",
+}
+
+// SimpleLogger holds basic data to format log messages
+type SimpleLogger struct {
 	TimeFormat string
 	AppName    string
 	Output     io.Writer
 }
 
-// DefaultLogger gives an app semi-sane logging without creating and managing a
-// Logger instance
-var DefaultLogger = Logger{
-	TimeFormat: "2006/01/02 15:04:05.000",
-	AppName:    filepath.Base(os.Args[0]),
-	Output:     os.Stderr,
+// Logger wraps any loggable to add convenience methods for each log level:
+// Debugf, Infof, etc.
+type Logger struct {
+	Loggable
 }
 
-// log is the central logger for all helpers to use
-func (l *Logger) log(level logLevel, message string) {
+// DefaultLogger gives an app semi-sane logging without creating and managing a
+// custom type
+var DefaultLogger = &Logger{
+	&SimpleLogger{
+		TimeFormat: "2006/01/02 15:04:05.000",
+		AppName:    filepath.Base(os.Args[0]),
+		Output:     os.Stderr,
+	},
+}
+
+// Log is the central logger for all helpers to use, implementing the Loggable interface
+func (l *SimpleLogger) Log(level LogLevel, message string) {
 	var timeString = time.Now().Format(l.TimeFormat)
-	var output = fmt.Sprintf("%s - %s - %s - %s\n", timeString, l.AppName, level, message)
+	var output = fmt.Sprintf("%s - %s - %s - %s\n", timeString, l.AppName, logLevelStrings[level], message)
 	fmt.Fprintf(l.Output, output)
 }
 
@@ -50,7 +73,7 @@ func Debugf(format string, args ...interface{}) {
 
 // Debugf logs a debug-level message
 func (l *Logger) Debugf(format string, args ...interface{}) {
-	l.log(debug, fmt.Sprintf(format, args...))
+	l.Log(Debug, fmt.Sprintf(format, args...))
 }
 
 // Infof logs an info-level message using the default logger
@@ -60,7 +83,7 @@ func Infof(format string, args ...interface{}) {
 
 // Infof logs an info-level message
 func (l *Logger) Infof(format string, args ...interface{}) {
-	l.log(info, fmt.Sprintf(format, args...))
+	l.Log(Info, fmt.Sprintf(format, args...))
 }
 
 // Warnf logs a warn-level message using the default logger
@@ -70,7 +93,7 @@ func Warnf(format string, args ...interface{}) {
 
 // Warnf logs a warn-level message
 func (l *Logger) Warnf(format string, args ...interface{}) {
-	l.log(warn, fmt.Sprintf(format, args...))
+	l.Log(Warn, fmt.Sprintf(format, args...))
 }
 
 // Errorf logs an error-level message using the default logger
@@ -80,7 +103,7 @@ func Errorf(format string, args ...interface{}) {
 
 // Errorf logs an error-level message
 func (l *Logger) Errorf(format string, args ...interface{}) {
-	l.log(err, fmt.Sprintf(format, args...))
+	l.Log(Err, fmt.Sprintf(format, args...))
 }
 
 // Criticalf logs a critical-level message using the default logger
@@ -90,7 +113,7 @@ func Criticalf(format string, args ...interface{}) {
 
 // Criticalf logs a critical-level message
 func (l *Logger) Criticalf(format string, args ...interface{}) {
-	l.log(crit, fmt.Sprintf(format, args...))
+	l.Log(Crit, fmt.Sprintf(format, args...))
 }
 
 // Fatalf logs a critical-level message using the default logger, then exits
@@ -100,6 +123,6 @@ func Fatalf(format string, args ...interface{}) {
 
 // Fatalf logs a critical-level message, then exits
 func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.log(crit, fmt.Sprintf(format, args...))
+	l.Log(Crit, fmt.Sprintf(format, args...))
 	os.Exit(1)
 }
