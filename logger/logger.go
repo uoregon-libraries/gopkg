@@ -62,8 +62,9 @@ var DefaultLogger = &Logger{
 // Log is the central logger for all helpers to use, implementing the Loggable interface
 func (l *SimpleLogger) Log(level LogLevel, message string) {
 	var timeString = time.Now().Format(l.TimeFormat)
-	var output = fmt.Sprintf("%s - %s - %s - %s\n", timeString, l.AppName, logLevelStrings[level], message)
+	var output = fmt.Sprintf("%s - %s - %s - ", timeString, l.AppName, logLevelStrings[level])
 	fmt.Fprintf(l.Output, output)
+	fmt.Fprintln(l.Output, message + "\n")
 }
 
 // Debugf logs a debug-level message using the default logger
