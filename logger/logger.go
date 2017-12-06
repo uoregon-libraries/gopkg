@@ -64,7 +64,7 @@ func (l *SimpleLogger) Log(level LogLevel, message string) {
 	var timeString = time.Now().Format(l.TimeFormat)
 	var output = fmt.Sprintf("%s - %s - %s - ", timeString, l.AppName, logLevelStrings[level])
 	fmt.Fprintf(l.Output, output)
-	fmt.Fprintln(l.Output, message + "\n")
+	fmt.Fprintln(l.Output, message)
 }
 
 // Debugf logs a debug-level message using the default logger
