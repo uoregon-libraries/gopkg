@@ -11,6 +11,9 @@ import (
 	"time"
 )
 
+// TimeFormat exposes the standard time format string the default logger sets
+const TimeFormat = "2006/01/02 15:04:05.000"
+
 // LogLevel restricts log levels to a python-like set of numbers
 type LogLevel int
 
@@ -53,7 +56,7 @@ type Logger struct {
 // custom type
 var DefaultLogger = &Logger{
 	&SimpleLogger{
-		TimeFormat: "2006/01/02 15:04:05.000",
+		TimeFormat: TimeFormat,
 		AppName:    filepath.Base(os.Args[0]),
 		Output:     os.Stderr,
 	},
