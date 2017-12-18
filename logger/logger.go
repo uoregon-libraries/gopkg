@@ -26,6 +26,11 @@ const (
 	Crit  LogLevel = 50
 )
 
+// String returns the standard text string for a given log level
+func (l LogLevel) String() string {
+	return logLevelStrings[l]
+}
+
 // Loggable defines a simple Log method loggers have to implement
 type Loggable interface {
 	Log(LogLevel, string)
@@ -65,7 +70,7 @@ var DefaultLogger = &Logger{
 // Log is the central logger for all helpers to use, implementing the Loggable interface
 func (l *SimpleLogger) Log(level LogLevel, message string) {
 	var timeString = time.Now().Format(l.TimeFormat)
-	var output = fmt.Sprintf("%s - %s - %s - ", timeString, l.AppName, logLevelStrings[level])
+	var output = fmt.Sprintf("%s - %s - %s - ", timeString, l.AppName, level)
 	fmt.Fprintf(l.Output, output)
 	fmt.Fprintln(l.Output, message)
 }
