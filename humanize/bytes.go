@@ -6,7 +6,7 @@ import (
 )
 
 // Values for different suffixes.  We only need up to exabytes, as anything
-// larger can't be stored in a uint64.  And, at least currently, exabytes are
+// larger can't be stored in an int64.  And, at least currently, exabytes are
 // absurdly large anyway.
 const (
 	Kilobyte = 1024
@@ -18,10 +18,10 @@ const (
 )
 
 // Bytes returns a human-friendly value for filesizes
-func Bytes(bytes uint64) string {
-	var divVal uint64
+func Bytes(bytes int64) string {
+	var divVal int64
 	var suffix string
-	var decToStr = func(val uint64) string { return strconv.FormatUint(val, 10) }
+	var decToStr = func(val int64) string { return strconv.FormatInt(val, 10) }
 
 	switch {
 	case bytes >= Exabyte:
@@ -77,7 +77,7 @@ func Bytes(bytes uint64) string {
 // the simpler approach of using floats and fmt.Sprintf - benchmarks put this
 // function taking 2.5x-7x as long as the above function, where 2.5x is only
 // seen when the bytes are < 1024, which in practice is likely to be uncommon.
-func bytesSimple(bytes uint64) string {
+func bytesSimple(bytes int64) string {
 	var val float64
 	var size = float64(bytes)
 	var suffix string
