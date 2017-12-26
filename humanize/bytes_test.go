@@ -8,7 +8,7 @@ import (
 // TestBytes verifies various values get converted correctly
 func TestBytes(t *testing.T) {
 	var valueExpectations = []struct {
-		size uint64
+		size int64
 		str  string
 	}{
 		{size: 50, str: "50 B"},
@@ -19,7 +19,7 @@ func TestBytes(t *testing.T) {
 		{size: Terabyte, str: "1 TB"},
 		{size: Terabyte + Megabyte, str: "1 TB"},
 		{size: 5000000000, str: "4.65 GB"},
-		{size: math.MaxUint64, str: "15.99 EB"},
+		{size: math.MaxInt64, str: "7.99 EB"},
 	}
 
 	for _, expect := range valueExpectations {
@@ -31,8 +31,8 @@ func TestBytes(t *testing.T) {
 }
 
 func BenchmarkBytes(b *testing.B) {
-	var tests = []uint64{0, 1, 2, 3, 4, 1024, 2048, 5000, 5000000000000, math.MaxUint64, 5000000}
-	tests = []uint64{2048, 5000, 5000000000000, math.MaxUint64, 5000000}
+	var tests = []int64{0, 1, 2, 3, 4, 1024, 2048, 5000, 5000000000000, math.MaxInt64, 5000000}
+	tests = []int64{2048, 5000, 5000000000000, math.MaxInt64, 5000000}
 	b.ResetTimer()
 
 	b.Run("Bytes", func(b *testing.B) {
