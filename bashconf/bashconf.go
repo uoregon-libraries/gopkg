@@ -3,15 +3,43 @@ package bashconf
 
 import (
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
-// Config is a simple alias for holding key/value pairs
-type Config map[string]string
+// Config is a simple type for holding key/value pairs
+type Config struct {
+	raw          map[string]string
+	allowEnvVars bool
+}
 
-// New just simplifies making a new Config map to avoid accidental nil map panics
-func New() Config {
-	return make(Config)
+// New returns a config instance for use
+func New() *Config {
+	return &Config{raw: make(map[string]string)}
+}
+
+// EnvironmentOverrides turns on or off checking the environment on calls to
+// c.Get(key)
+func (c *Config) EnvironmentOverrides(allow bool) {
+	c.allowEnvVars = allow
+}
+
+// Get looks up the string in its raw datastore and returns it.  If the value
+// exists in an environment variable, and this config was set up to overlay
+// environment variables (this is disabled by default), that is returned instead.
+func (c *Config) Get(key string) string {
+	var val = c.raw[key]
+
+	// Only override with env if (a) c has been configured to allow this, and (b)
+	// the environment definitely has the given key
+	if c.allowEnvVars {
+		var envval, ok = os.LookupEnv(key)
+		if ok {
+			val = envval
+		}
+	}
+
+	return val
 }
 
 // ParseFile reads config from a file and adds to the Config map.  If the file
@@ -23,7 +51,7 @@ func New() Config {
 // and a value of "1" since bash has no types.  This supports only the simplest
 // of bash variable assignment: no arrays, no substitutions of other variables,
 // just very basic key/value pairs.
-func (c Config) ParseFile(filename string) error {
+func (c *Config) ParseFile(filename string) error {
 	var content, err = ioutil.ReadFile(filename)
 	if err != nil {
 		return err
@@ -35,7 +63,7 @@ func (c Config) ParseFile(filename string) error {
 // ParseString reads each line in s and attempts to parse a key/value pair.
 // Any line starting with a comment is ignored, and lines that don't split into
 // a key/value are ignored.
-func (c Config) ParseString(s string) {
+func (c *Config) ParseString(s string) {
 	var lines = strings.Split(s, "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -63,6 +91,6 @@ func (c Config) ParseString(s string) {
 		} else if val[0] == '\'' {
 			val = strings.Trim(val, `'`)
 		}
-		c[key] = val
+		c.raw[key] = val
 	}
 }

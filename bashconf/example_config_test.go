@@ -2,6 +2,7 @@ package bashconf_test
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/uoregon-libraries/gopkg/bashconf"
 )
@@ -34,8 +35,9 @@ BAD_NUMBER="x"
 
 func Example() {
 	var c = bashconf.New()
+	os.Setenv("ENVONLY", "foo")
 	c.ParseString(configString)
-	fmt.Printf("SOMEARG is %#v; SOMEARG2 is %#v\n", c["SOMEARG"], c["SOMEARG2"])
+	fmt.Printf("SOMEARG is %#v; SOMEARG2 is %#v\n", c.Get("SOMEARG"), c.Get("SOMEARG2"))
 
 	var st struct {
 		Value     string `setting:"VALUE"`
@@ -43,6 +45,7 @@ func Example() {
 		BadURL    string `setting:"BAD_URL" type:"url"`
 		Number    int    `setting:"NUMBER" type:"int"`
 		BadNumber int    `setting:"BAD_NUMBER" type:"int"`
+		EnvVar    string `setting:"ENVONLY"`
 	}
 	var err = c.Store(&st)
 	fmt.Printf("Errors: %s\n", err)
@@ -51,6 +54,11 @@ func Example() {
 	fmt.Printf("st.BadURL: %#v\n", st.BadURL)
 	fmt.Printf("st.Number: %d\n", st.Number)
 	fmt.Printf("st.BadNumber: %d\n", st.BadNumber)
+	fmt.Printf("st.EnvVar: %q\n", st.EnvVar)
+
+	c.EnvironmentOverrides(true)
+	c.Store(&st)
+	fmt.Printf("st.EnvVar after allowing overrides: %q\n", st.EnvVar)
 
 	// Output:
 	// SOMEARG is "5"; SOMEARG2 is "6"
@@ -60,4 +68,6 @@ func Example() {
 	// st.BadURL: "ftp://uoregon.edu"
 	// st.Number: 75
 	// st.BadNumber: 0
+	// st.EnvVar: ""
+	// st.EnvVar after allowing overrides: "foo"
 }

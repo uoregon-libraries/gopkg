@@ -13,7 +13,7 @@ import (
 // Store populates a tagged structure with the Config data.  Tagged
 // settings must be given a bash variable name, and can optionally specify the
 // type of "path" or "url" for some basic sanity checking.
-func (c Config) Store(dest interface{}) error {
+func (c *Config) Store(dest interface{}) error {
 	var errors = c.readTaggedFields(dest)
 	if len(errors) > 0 {
 		return fmt.Errorf("invalid configuration: %s", strings.Join(errors, ", "))
@@ -25,7 +25,7 @@ func (c Config) Store(dest interface{}) error {
 // readTaggedFields iterates over the tagged fields in dest and pulls settings
 // from c.  If a tagged field has a type, it's used to process/validate the
 // raw string value.
-func (c Config) readTaggedFields(dest interface{}) (errors []string) {
+func (c *Config) readTaggedFields(dest interface{}) (errors []string) {
 	var rType = reflect.TypeOf(dest).Elem()
 	var rVal = reflect.ValueOf(dest).Elem()
 
@@ -43,7 +43,7 @@ func (c Config) readTaggedFields(dest interface{}) (errors []string) {
 			continue
 		}
 
-		var val = c[sKey]
+		var val = c.Get(sKey)
 		var sType = sf.Tag.Get("type")
 		switch sType {
 		case "":
