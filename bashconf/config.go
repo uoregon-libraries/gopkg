@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/uoregon-libraries/gopkg/fileutil"
@@ -47,6 +48,12 @@ func (c Config) readTaggedFields(dest interface{}) (errors []string) {
 		switch sType {
 		case "":
 			rVal.Field(i).SetString(val)
+		case "int":
+			var num, err = strconv.ParseInt(val, 10, 64)
+			if err != nil {
+				errors = append(errors, fmt.Sprintf("%#v (%#v) is not a valid integer", sKey, val))
+			}
+			rVal.Field(i).SetInt(num)
 		case "url":
 			var u, err = url.Parse(val)
 			if err != nil {

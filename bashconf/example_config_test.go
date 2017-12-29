@@ -26,6 +26,10 @@ URL_VALUE=https://uoregon.edu
 # This is technically valid per the URL RFC, but our parser requires a scheme
 # of http or https
 BAD_URL=ftp://uoregon.edu
+
+# Okay, now we support ints, woo!
+NUMBER="75"
+BAD_NUMBER="x"
 `
 
 func Example() {
@@ -34,20 +38,26 @@ func Example() {
 	fmt.Printf("SOMEARG is %#v; SOMEARG2 is %#v\n", c["SOMEARG"], c["SOMEARG2"])
 
 	var st struct {
-		Value    string `setting:"VALUE"`
-		URLValue string `setting:"URL_VALUE" type:"url"`
-		BadURL   string `setting:"BAD_URL" type:"url"`
+		Value     string `setting:"VALUE"`
+		URLValue  string `setting:"URL_VALUE" type:"url"`
+		BadURL    string `setting:"BAD_URL" type:"url"`
+		Number    int    `setting:"NUMBER" type:"int"`
+		BadNumber int    `setting:"BAD_NUMBER" type:"int"`
 	}
 	var err = c.Store(&st)
 	fmt.Printf("Errors: %s\n", err)
 	fmt.Printf("st.Value: %#v\n", st.Value)
 	fmt.Printf("st.URLValue: %#v\n", st.URLValue)
 	fmt.Printf("st.BadURL: %#v\n", st.BadURL)
+	fmt.Printf("st.Number: %d\n", st.Number)
+	fmt.Printf("st.BadNumber: %d\n", st.BadNumber)
 
 	// Output:
 	// SOMEARG is "5"; SOMEARG2 is "6"
-	// Errors: invalid configuration: "BAD_URL" ("ftp://uoregon.edu") is not a valid URL: must be http(s)
+	// Errors: invalid configuration: "BAD_URL" ("ftp://uoregon.edu") is not a valid URL: must be http(s), "BAD_NUMBER" ("x") is not a valid integer
 	// st.Value: "foo bar"
 	// st.URLValue: "https://uoregon.edu"
 	// st.BadURL: "ftp://uoregon.edu"
+	// st.Number: 75
+	// st.BadNumber: 0
 }
