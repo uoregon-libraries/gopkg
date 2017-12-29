@@ -36,6 +36,7 @@ BAD_NUMBER="x"
 func Example() {
 	var c = bashconf.New()
 	os.Setenv("ENVONLY", "foo")
+	os.Setenv("PREFIXED_ENVONLY", "bar")
 	c.ParseString(configString)
 	fmt.Printf("SOMEARG is %#v; SOMEARG2 is %#v\n", c.Get("SOMEARG"), c.Get("SOMEARG2"))
 
@@ -60,6 +61,10 @@ func Example() {
 	c.Store(&st)
 	fmt.Printf("st.EnvVar after allowing overrides: %q\n", st.EnvVar)
 
+	c.EnvironmentPrefix("PREFIXED_")
+	c.Store(&st)
+	fmt.Printf("st.EnvVar after prefixing overrides: %q\n", st.EnvVar)
+
 	// Output:
 	// SOMEARG is "5"; SOMEARG2 is "6"
 	// Errors: invalid configuration: "BAD_URL" ("ftp://uoregon.edu") is not a valid URL: must be http(s), "BAD_NUMBER" ("x") is not a valid integer
@@ -70,4 +75,5 @@ func Example() {
 	// st.BadNumber: 0
 	// st.EnvVar: ""
 	// st.EnvVar after allowing overrides: "foo"
+	// st.EnvVar after prefixing overrides: "bar"
 }

@@ -11,6 +11,7 @@ import (
 type Config struct {
 	raw          map[string]string
 	allowEnvVars bool
+	envPrefix    string
 }
 
 // New returns a config instance for use
@@ -24,6 +25,13 @@ func (c *Config) EnvironmentOverrides(allow bool) {
 	c.allowEnvVars = allow
 }
 
+// EnvironmentPrefix sets the prefix required for environment overrides to
+// work.  If EnvironmentOverrides is off, calling this will turn it on.
+func (c *Config) EnvironmentPrefix(prefix string) {
+	c.allowEnvVars = true
+	c.envPrefix = prefix
+}
+
 // Get looks up the string in its raw datastore and returns it.  If the value
 // exists in an environment variable, and this config was set up to overlay
 // environment variables (this is disabled by default), that is returned instead.
@@ -33,7 +41,7 @@ func (c *Config) Get(key string) string {
 	// Only override with env if (a) c has been configured to allow this, and (b)
 	// the environment definitely has the given key
 	if c.allowEnvVars {
-		var envval, ok = os.LookupEnv(key)
+		var envval, ok = os.LookupEnv(c.envPrefix + key)
 		if ok {
 			val = envval
 		}
