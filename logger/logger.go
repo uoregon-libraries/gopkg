@@ -19,11 +19,12 @@ type LogLevel int
 
 // Python-like LogLevel constants
 const (
-	Debug LogLevel = 10
-	Info  LogLevel = 20
-	Warn  LogLevel = 30
-	Err   LogLevel = 40
-	Crit  LogLevel = 50
+	Invalid LogLevel = 0
+	Debug   LogLevel = 10
+	Info    LogLevel = 20
+	Warn    LogLevel = 30
+	Err     LogLevel = 40
+	Crit    LogLevel = 50
 )
 
 // String returns the standard text string for a given log level
@@ -42,6 +43,18 @@ var logLevelStrings = map[LogLevel]string{
 	Warn:  "WARN",
 	Err:   "ERROR",
 	Crit:  "CRIT",
+}
+
+// LogLevelFromString returns the LogLevel for a given human-readable string,
+// or else Invalid if the string doesn't map to one of our log levels
+func LogLevelFromString(s string) LogLevel {
+	for level, str := range logLevelStrings {
+		if str == s {
+			return level
+		}
+	}
+
+	return Invalid
 }
 
 // SimpleLogger holds basic data to format log messages
