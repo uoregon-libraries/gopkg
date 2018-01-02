@@ -70,15 +70,49 @@ type Logger struct {
 	Loggable
 }
 
+// A LeveledLogger wraps SimpleLogger to filter by log level
+type LeveledLogger struct {
+	*SimpleLogger
+	Level LogLevel
+}
+
+// Log prints the message via SimpleLogger if its level is at or above
+// LeveledLogger's log level
+func (ll *LeveledLogger) Log(level LogLevel, message string) {
+	if level >= ll.Level {
+		ll.SimpleLogger.Log(level, message)
+	}
+}
+
+func standardSimpleLogger() *SimpleLogger {
+	return &SimpleLogger{
+		TimeFormat: TimeFormat,
+		Output:     os.Stderr,
+	}
+}
+
+// New returns an appropriate Logger that filters logs which are less
+// important than the given log level.  If log level "DEBUG" is chosen, nothing
+// is filtered.
+func New(level LogLevel) *Logger {
+	return Named(filepath.Base(os.Args[0]), level)
+}
+
+// Named returns a logger using the given name instead of defaulting to the
+// application's command-line name
+func Named(appName string, level LogLevel) *Logger {
+	var sl = standardSimpleLogger()
+	sl.AppName = appName
+	if level <= Debug {
+		return &Logger{sl}
+	}
+
+	return &Logger{&LeveledLogger{sl, level}}
+}
+
 // DefaultLogger gives an app semi-sane logging without creating and managing a
 // custom type
-var DefaultLogger = &Logger{
-	&SimpleLogger{
-		TimeFormat: TimeFormat,
-		AppName:    filepath.Base(os.Args[0]),
-		Output:     os.Stderr,
-	},
-}
+var DefaultLogger = New(Debug)
 
 // Log is the central logger for all helpers to use, implementing the Loggable interface
 func (l *SimpleLogger) Log(level LogLevel, message string) {
