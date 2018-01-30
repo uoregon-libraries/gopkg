@@ -1,4 +1,8 @@
 // Package bashconf offers parsing of very simple bash-like configuration files
+//
+// Please note: this isn't a good fit for most Go-only apps!  We've built this
+// to handle situations where it's a major benefit to have our configs in a
+// format that works in bash (not to mention Python) natively.
 package bashconf
 
 import (
