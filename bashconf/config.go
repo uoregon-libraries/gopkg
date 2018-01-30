@@ -48,6 +48,12 @@ func (c *Config) readTaggedFields(dest interface{}) (errors []string) {
 		switch sType {
 		case "":
 			rVal.Field(i).SetString(val)
+		case "float":
+			var num, err = strconv.ParseFloat(val, 64)
+			if err != nil {
+				errors = append(errors, fmt.Sprintf("%#v (%#v) is not a valid float", sKey, val))
+			}
+			rVal.Field(i).SetFloat(num)
 		case "int":
 			var num, err = strconv.ParseInt(val, 10, 64)
 			if err != nil {

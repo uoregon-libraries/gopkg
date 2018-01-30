@@ -31,6 +31,10 @@ BAD_URL=ftp://uoregon.edu
 # Okay, now we support ints, woo!
 NUMBER="75"
 BAD_NUMBER="x"
+
+# Wow, floats, too?  Amazing!  Unprecedented!!
+FLOAT="0.75"
+BAD_FLOAT="0.75x"
 `
 
 func Example() {
@@ -41,12 +45,14 @@ func Example() {
 	fmt.Printf("SOMEARG is %#v; SOMEARG2 is %#v\n", c.Get("SOMEARG"), c.Get("SOMEARG2"))
 
 	var st struct {
-		Value     string `setting:"VALUE"`
-		URLValue  string `setting:"URL_VALUE" type:"url"`
-		BadURL    string `setting:"BAD_URL" type:"url"`
-		Number    int    `setting:"NUMBER" type:"int"`
-		BadNumber int    `setting:"BAD_NUMBER" type:"int"`
-		EnvVar    string `setting:"ENVONLY"`
+		Value     string  `setting:"VALUE"`
+		URLValue  string  `setting:"URL_VALUE" type:"url"`
+		BadURL    string  `setting:"BAD_URL" type:"url"`
+		Number    int     `setting:"NUMBER" type:"int"`
+		BadNumber int     `setting:"BAD_NUMBER" type:"int"`
+		Float     float64 `setting:"FLOAT" type:"float"`
+		BadFloat  float64 `setting:"BAD_FLOAT" type:"float"`
+		EnvVar    string  `setting:"ENVONLY"`
 	}
 	var err = c.Store(&st)
 	fmt.Printf("Errors: %s\n", err)
@@ -55,6 +61,8 @@ func Example() {
 	fmt.Printf("st.BadURL: %#v\n", st.BadURL)
 	fmt.Printf("st.Number: %d\n", st.Number)
 	fmt.Printf("st.BadNumber: %d\n", st.BadNumber)
+	fmt.Printf("st.Float: %g\n", st.Float)
+	fmt.Printf("st.BadFloat: %g\n", st.BadFloat)
 	fmt.Printf("st.EnvVar: %q\n", st.EnvVar)
 
 	c.EnvironmentOverrides(true)
@@ -67,12 +75,14 @@ func Example() {
 
 	// Output:
 	// SOMEARG is "5"; SOMEARG2 is "6"
-	// Errors: invalid configuration: "BAD_URL" ("ftp://uoregon.edu") is not a valid URL: must be http(s), "BAD_NUMBER" ("x") is not a valid integer
+	// Errors: invalid configuration: "BAD_URL" ("ftp://uoregon.edu") is not a valid URL: must be http(s), "BAD_NUMBER" ("x") is not a valid integer, "BAD_FLOAT" ("0.75x") is not a valid float
 	// st.Value: "foo bar"
 	// st.URLValue: "https://uoregon.edu"
 	// st.BadURL: "ftp://uoregon.edu"
 	// st.Number: 75
 	// st.BadNumber: 0
+	// st.Float: 0.75
+	// st.BadFloat: 0
 	// st.EnvVar: ""
 	// st.EnvVar after allowing overrides: "foo"
 	// st.EnvVar after prefixing overrides: "bar"
