@@ -35,6 +35,10 @@ BAD_NUMBER="x"
 # Wow, floats, too?  Amazing!  Unprecedented!!
 FLOAT="0.75"
 BAD_FLOAT="0.75x"
+
+# Now files are supported!
+FILE="/etc/passwd"
+BAD_FILE="/etc/foobarblah"
 `
 
 func Example() {
@@ -53,6 +57,8 @@ func Example() {
 		Float     float64 `setting:"FLOAT" type:"float"`
 		BadFloat  float64 `setting:"BAD_FLOAT" type:"float"`
 		EnvVar    string  `setting:"ENVONLY"`
+		File      string  `setting:"FILE" type:"file"`
+		BadFile   string  `setting:"BAD_FILE" type:"file"`
 	}
 	var err = c.Store(&st)
 	fmt.Printf("Errors: %s\n", err)
@@ -64,6 +70,8 @@ func Example() {
 	fmt.Printf("st.Float: %g\n", st.Float)
 	fmt.Printf("st.BadFloat: %g\n", st.BadFloat)
 	fmt.Printf("st.EnvVar: %q\n", st.EnvVar)
+	fmt.Printf("st.File: %q\n", st.File)
+	fmt.Printf("st.BadFile: %q\n", st.BadFile)
 
 	c.EnvironmentOverrides(true)
 	c.Store(&st)
@@ -75,7 +83,7 @@ func Example() {
 
 	// Output:
 	// SOMEARG is "5"; SOMEARG2 is "6"
-	// Errors: invalid configuration: "BAD_URL" ("ftp://uoregon.edu") is not a valid URL: must be http(s), "BAD_NUMBER" ("x") is not a valid integer, "BAD_FLOAT" ("0.75x") is not a valid float
+	// Errors: invalid configuration: "BAD_URL" ("ftp://uoregon.edu") is not a valid URL: must be http(s), "BAD_NUMBER" ("x") is not a valid integer, "BAD_FLOAT" ("0.75x") is not a valid float, "BAD_FILE" ("/etc/foobarblah") is not a file
 	// st.Value: "foo bar"
 	// st.URLValue: "https://uoregon.edu"
 	// st.BadURL: "ftp://uoregon.edu"
@@ -84,6 +92,8 @@ func Example() {
 	// st.Float: 0.75
 	// st.BadFloat: 0
 	// st.EnvVar: ""
+	// st.File: "/etc/passwd"
+	// st.BadFile: "/etc/foobarblah"
 	// st.EnvVar after allowing overrides: "foo"
 	// st.EnvVar after prefixing overrides: "bar"
 }

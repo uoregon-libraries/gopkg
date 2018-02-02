@@ -78,6 +78,12 @@ func (c *Config) readTaggedFields(dest interface{}) (errors []string) {
 				errors = append(errors, fmt.Sprintf("%#v (%#v) is not a directory", sKey, val))
 				continue
 			}
+		case "file":
+			rVal.Field(i).SetString(val)
+			if !fileutil.IsFile(val) {
+				errors = append(errors, fmt.Sprintf("%#v (%#v) is not a file", sKey, val))
+				continue
+			}
 		}
 	}
 
