@@ -65,6 +65,9 @@ func (c *Config) readTaggedFields(dest interface{}) (errors []string) {
 			if err != nil {
 				errors = append(errors, fmt.Sprintf("%#v (%#v) is not a valid URL: %s", sKey, val, err))
 			}
+			if u == nil {
+				return errors
+			}
 			if u.Host == "" {
 				errors = append(errors, fmt.Sprintf("%#v (%#v) is not a valid URL: missing host", sKey, val))
 			}
