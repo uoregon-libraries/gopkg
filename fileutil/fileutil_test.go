@@ -21,7 +21,7 @@ func TestReaddir(t *testing.T) {
 		t.Fatalf("Got an error trying to read the filesystem!  %s", err)
 	}
 
-	t.Log("Files:")
+	t.Logf("Found %d Files:", len(infos))
 	for _, info := range infos {
 		t.Log("  - " + info.Name())
 	}
