@@ -14,3 +14,15 @@ func TestFind(t *testing.T) {
 		t.Fatalf("Got an error trying to read the filesystem!  %s", err)
 	}
 }
+
+func TestReaddir(t *testing.T) {
+	var infos, err = Readdir(os.TempDir())
+	if err != nil {
+		t.Fatalf("Got an error trying to read the filesystem!  %s", err)
+	}
+
+	t.Log("Files:")
+	for _, info := range infos {
+		t.Log("  - " + info.Name())
+	}
+}
