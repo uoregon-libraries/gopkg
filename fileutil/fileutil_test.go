@@ -16,7 +16,7 @@ func TestFind(t *testing.T) {
 }
 
 func TestReaddir(t *testing.T) {
-	var infos, err = Readdir(os.TempDir())
+	var infos, err = ReaddirSorted(os.TempDir())
 	if err != nil {
 		t.Fatalf("Got an error trying to read the filesystem!  %s", err)
 	}
