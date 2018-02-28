@@ -45,9 +45,6 @@ func Readdir(path string) ([]os.FileInfo, error) {
 
 	var items []os.FileInfo
 	for _, fname := range names {
-		if fname == "" {
-			continue
-		}
 		var item, err = os.Stat(path + "/" + fname)
 		if err != nil {
 			return nil, err
