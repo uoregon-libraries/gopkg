@@ -7,10 +7,17 @@ import (
 	"syscall"
 )
 
+// dirEntBuffer is the number of bytes allocated when calling the low-level
+// ReadDirect function.  32k is the value C uses, but this *must* be set to a
+// value that's higher than the CIFS responses, which we are currently seeing
+// as roughly 6k.
 const dirEntBuffer = 32768
 
-// Readdir calls low-level Syscall functions in order to avoid the nasty CentOS
-// 7 + CIFS bug we're run into
+// Readdir calls low-level syscall functions in order to avoid what appears to
+// be a kernel bug in CentOS 7 when reading from CIFS filesystems.  See
+// https://github.com/golang/go/issues/24015 and/or
+// https://stackoverflow.com/questions/46719753/golang-bug-ioutil-readdir-listing-files-on-cifs-share-or-doing-something-wro
+// for some context.
 func Readdir(path string) ([]os.FileInfo, error) {
 	var d *os.File
 	var err error
