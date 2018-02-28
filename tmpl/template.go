@@ -17,12 +17,12 @@ type FuncMap template.FuncMap
 //
 // Explanation of default functions:
 //
-// - nl2br(string): For presenting user-entered text, escapes the string and
-//   then converts all newlines to "<br />"
-// - raw(string): Turns a string into template.HTML so it can be displayed
-//   without escaping.  This should be used carefully!
-// - comment(string): Prints an HTML comment for cases you want a comment
-//   that's visible in the final HTML
+//   - nl2br(string): For presenting user-entered text, escapes the string and
+//     then converts all newlines to "<br />"
+//   - raw(string): Turns a string into template.HTML so it can be displayed
+//     without escaping.  This should be used carefully!
+//   - comment(string): Prints an HTML comment for cases you want a comment
+//     that's visible in the final HTML
 var DefaultTemplateFunctions = FuncMap{
 	"nl2br": func(s string) template.HTML {
 		var escaped = template.HTMLEscaper(s)
