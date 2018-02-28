@@ -8,7 +8,7 @@ import (
 )
 
 // dirEntBuffer is the number of bytes allocated when calling the low-level
-// ReadDirect function.  32k is the value C uses, but this *must* be set to a
+// ReadDirent function.  32k is the value C uses, but this *must* be set to a
 // value that's higher than the CIFS responses, which we are currently seeing
 // as roughly 6k.
 const dirEntBuffer = 32768
