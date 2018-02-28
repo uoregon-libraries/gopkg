@@ -3,7 +3,6 @@
 package fileutil
 
 import (
-	"fmt"
 	"os"
 	"syscall"
 )
@@ -15,6 +14,7 @@ const dirEntBuffer = 32768
 func Readdir(path string) ([]os.FileInfo, error) {
 	var d *os.File
 	var err error
+	var bufp, nbuf int
 
 	d, err = os.Open(path)
 	if err != nil {
@@ -23,25 +23,28 @@ func Readdir(path string) ([]os.FileInfo, error) {
 	defer d.Close()
 
 	var buf = make([]byte, dirEntBuffer)
-	var consumed, n int
-	var fnames []string
+	var names = make([]string, 0, 100)
 	for {
-		n, err = syscall.ReadDirent(int(d.Fd()), buf)
-		if err != nil {
-			return nil, err
+		if bufp >= nbuf {
+			bufp = 0
+			nbuf, err = syscall.ReadDirent(int(d.Fd()), buf)
+			if err != nil {
+				return nil, err
+			}
 		}
-		if n == 0 {
+
+		// Check for EOF
+		if nbuf <= 0 {
 			break
 		}
 
-		consumed, _, fnames = syscall.ParseDirent(buf, -1, fnames)
-		if consumed < n {
-			return nil, fmt.Errorf("read %d bytes but only consumed %d", n, consumed)
-		}
+		var nb int
+		nb, _, names = syscall.ParseDirent(buf[bufp:nbuf], -1, names)
+		bufp += nb
 	}
 
 	var items []os.FileInfo
-	for _, fname := range fnames {
+	for _, fname := range names {
 		if fname == "" {
 			continue
 		}
