@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,7 +56,18 @@ func New(root string) *Bag {
 // This is not parallelized as it seems unlikely any advantage would be gained
 // since file IO is likely to be the main cost, not CPU.
 func (b *Bag) WriteTagFiles() (err error) {
-	return b.GenerateChecksums()
+	err = b.GenerateChecksums()
+	if err == nil {
+		err = b.writeManifest()
+	}
+	if err == nil {
+		err = b.writeTagManifest()
+	}
+	if err == nil {
+		err = b.writeBagitFile()
+	}
+
+	return
 }
 
 // GenerateChecksums iterates over all files in the data path and generates
@@ -98,9 +110,47 @@ func (b *Bag) GenerateChecksums() error {
 		return nil
 	})
 
+	return err
+}
+
+func (b *Bag) writeManifest() error {
+	var manifestFile = filepath.Join(b.root, "manifest-"+b.Hasher.Name+".txt")
+	if !fileutil.MustNotExist(manifestFile) {
+		return fmt.Errorf("manifest file %q must not exist", manifestFile)
+	}
+
+	var f, err = ioutil.TempFile("", "")
 	if err != nil {
-		return fmt.Errorf("unable to generate %s checksums: %s", b.Hasher.Name, err)
+		return fmt.Errorf("cannot create temp manifest file: %s", err)
+	}
+	var tempName = f.Name()
+	defer f.Close()
+	defer os.Remove(tempName)
+
+	for _, ck := range b.Checksums {
+		_, err = fmt.Fprintf(f, "%s  %s\n", ck.Checksum, ck.Path)
+		if err != nil {
+			return fmt.Errorf("couldn't write to tempfile: %s", err)
+		}
+	}
+	err = f.Close()
+	if err != nil {
+		return fmt.Errorf("error trying to close tempfile: %s", err)
+	}
+
+	err = fileutil.CopyFile(f.Name(), manifestFile)
+	if err != nil {
+		os.Remove(manifestFile)
+		return fmt.Errorf("unable to copy temp file to %q: %s", manifestFile, err)
 	}
 
 	return nil
+}
+
+func (b *Bag) writeTagManifest() error {
+	return fmt.Errorf("not implemented")
+}
+
+func (b *Bag) writeBagitFile() error {
+	return fmt.Errorf("not implemented")
 }
