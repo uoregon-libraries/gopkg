@@ -18,7 +18,7 @@ import (
 
 // A Hasher represents a hash implementation for generating tag files
 type Hasher struct {
-	Factory func() hash.Hash
+	Hash func() hash.Hash
 	Name    string
 }
 
@@ -95,7 +95,7 @@ func (b *Bag) GenerateChecksums() error {
 			}
 			defer f.Close()
 
-			var hash = b.Hasher.Factory()
+			var hash = b.Hasher.Hash()
 			_, err = io.Copy(hash, f)
 			if err != nil {
 				return fmt.Errorf("cannot read %q for hashing: %s", path, err)
