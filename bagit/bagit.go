@@ -2,10 +2,10 @@ package bagit
 
 import (
 	"fmt"
+	"hash"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/uoregon-libraries/gopkg/fileutil"
 )
@@ -61,36 +61,61 @@ func (b *Bag) WriteTagFiles() (err error) {
 // useful for testing, bag validation, or making use of the BagIt data
 // structure in cases where checksums need to be stored externally to the data.
 func (b *Bag) GenerateChecksums() error {
-	b.Checksums = nil
+	var err error
+	var realroot string
+
+	realroot, err = filepath.Abs(b.root)
+	if err != nil {
+		return fmt.Errorf("unable to determine bag's absolute root path from %q: %s", b.root, err)
+	}
+	b.root = realroot
+
 	var dataPath = filepath.Join(b.root, "data")
 	if !fileutil.IsDir(dataPath) {
 		return fmt.Errorf("%q is not a directory", dataPath)
 	}
 
-	var err = filepath.Walk(dataPath, func(path string, info os.FileInfo, err error) error {
+	b.Checksums = nil
+	err = filepath.Walk(dataPath, func(path string, info os.FileInfo, err error) error {
 		if info.Mode().IsRegular() {
-			var f, err = os.Open(path)
-			if err != nil {
-				return fmt.Errorf("cannot open %q: %s", path, err)
+			var chksum, err = b.getsum(path)
+			if err == nil {
+				b.Checksums = append(b.Checksums, chksum)
 			}
-			defer f.Close()
-
-			var hash = b.Hasher.Hash()
-			_, err = io.Copy(hash, f)
-			if err != nil {
-				return fmt.Errorf("cannot read %q for hashing: %s", path, err)
-			}
-
-			b.Checksums = append(b.Checksums, &FileChecksum{
-				Path:     strings.Replace(path, b.root+"/", "", 1),
-				Checksum: fmt.Sprintf("%x", hash.Sum(nil)),
-			})
+			return err
 		}
 
 		return nil
 	})
 
 	return err
+}
+
+func (b *Bag) getsum(path string) (*FileChecksum, error) {
+	var err error
+	var f *os.File
+	var relPath, hexSum string
+	var h hash.Hash
+
+	f, err = os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open %q: %s", path, err)
+	}
+	defer f.Close()
+
+	h = b.Hasher.Hash()
+	_, err = io.Copy(h, f)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read %q for hashing: %s", path, err)
+	}
+
+	relPath, err = filepath.Rel(b.root, path)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse %q's relative file path: %s", path, err)
+	}
+
+	hexSum = fmt.Sprintf("%x", h.Sum(nil))
+	return &FileChecksum{Path: relPath, Checksum: hexSum}, nil
 }
 
 func (b *Bag) writeManifest() error {
