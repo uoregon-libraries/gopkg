@@ -42,10 +42,10 @@ func (b *Bag) WriteTagFiles() (err error) {
 		err = b.writeManifest()
 	}
 	if err == nil {
-		err = b.writeTagManifest()
+		err = b.writeBagitFile()
 	}
 	if err == nil {
-		err = b.writeBagitFile()
+		err = b.writeTagManifest()
 	}
 
 	return
