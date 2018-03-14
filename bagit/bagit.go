@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -137,10 +138,38 @@ func (b *Bag) writeManifest() error {
 	return nil
 }
 
-func (b *Bag) writeTagManifest() error {
-	return fmt.Errorf("not implemented")
+func (b *Bag) writeBagitFile() error {
+	var f = fileutil.NewSafeFile(filepath.Join(b.root, "bagit.txt"))
+	f.Write([]byte("BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"))
+	return f.Close()
 }
 
-func (b *Bag) writeBagitFile() error {
-	return fmt.Errorf("not implemented")
+func (b *Bag) writeTagManifest() error {
+	// Technically all files at the bag root are considered tag files, as a bag
+	// can have custom tag files, so we iterate all files at that top level
+	var infos, err = ioutil.ReadDir(b.root)
+	if err != nil {
+		return fmt.Errorf("error reading bag root: %s", err)
+	}
+
+	var f = fileutil.NewSafeFile(filepath.Join(b.root, "tagmanifest-"+b.Hasher.Name+".txt"))
+	for _, info := range infos {
+		if info.Mode().IsRegular() {
+			var path = filepath.Join(b.root, info.Name())
+			var chksum, err = b.getsum(path)
+			if err != nil {
+				f.Cancel()
+				return fmt.Errorf("error getting %q's checksum: %s", path, err)
+			}
+
+			_, err = fmt.Fprintf(f, "%s  %s\n", chksum.Checksum, info.Name())
+			if err != nil {
+				f.Cancel()
+				return fmt.Errorf("error writing checksum: %s", err)
+			}
+		}
+	}
+
+	f.Close()
+	return nil
 }
