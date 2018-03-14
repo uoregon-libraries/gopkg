@@ -3,7 +3,6 @@ package bagit
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -100,29 +99,14 @@ func (b *Bag) writeManifest() error {
 		return fmt.Errorf("manifest file %q must not exist", manifestFile)
 	}
 
-	var f, err = ioutil.TempFile("", "")
-	if err != nil {
-		return fmt.Errorf("cannot create temp manifest file: %s", err)
-	}
-	var tempName = f.Name()
-	defer f.Close()
-	defer os.Remove(tempName)
-
+	var f = fileutil.NewSafeFile(manifestFile)
 	for _, ck := range b.Checksums {
-		_, err = fmt.Fprintf(f, "%s  %s\n", ck.Checksum, ck.Path)
-		if err != nil {
-			return fmt.Errorf("couldn't write to tempfile: %s", err)
-		}
-	}
-	err = f.Close()
-	if err != nil {
-		return fmt.Errorf("error trying to close tempfile: %s", err)
+		fmt.Fprintf(f, "%s  %s\n", ck.Checksum, ck.Path)
 	}
 
-	err = fileutil.CopyFile(f.Name(), manifestFile)
+	var err = f.Close()
 	if err != nil {
-		os.Remove(manifestFile)
-		return fmt.Errorf("unable to copy temp file to %q: %s", manifestFile, err)
+		return fmt.Errorf("error writing manifest file: %s", err)
 	}
 
 	return nil
