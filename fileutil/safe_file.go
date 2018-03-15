@@ -63,7 +63,7 @@ func (f *SafeFile) Close() error {
 		return f.err
 	}
 
-	err = CopyFile(f.tempName, f.finalPath)
+	err = CopyVerify(f.tempName, f.finalPath)
 	if err != nil {
 		f.Cancel()
 		f.err = fmt.Errorf("unable to copy temp file: %s", f.err)
