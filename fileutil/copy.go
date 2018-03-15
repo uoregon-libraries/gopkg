@@ -169,6 +169,8 @@ func CopyVerify(src, dst string) error {
 	if srcChecksum != dstChecksum {
 		return fmt.Errorf("checksum failure")
 	}
+
+	return nil
 }
 
 // copyFileContents actually copies bytes from src to dst.  On any error, an
