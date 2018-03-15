@@ -148,6 +148,29 @@ func CopyFile(src, dst string) error {
 	return copyFileContents(src, dst)
 }
 
+// CopyVerify copies the bytes from src into dst using CopyFile, then verifies
+// the two files have the same CRC32, giving a small measure of certainty that
+// the copy succeeded.
+func CopyVerify(src, dst string) error {
+	var err = CopyFile(src, dst)
+	if err != nil {
+		return err
+	}
+
+	var srcChecksum, dstChecksum string
+	srcChecksum, err = CRC32(src)
+	if err != nil {
+		return fmt.Errorf("unable to get source file's checksum: %s", err)
+	}
+	dstChecksum, err = CRC32(dst)
+	if err != nil {
+		return fmt.Errorf("unable to get destination file's checksum: %s", err)
+	}
+	if srcChecksum != dstChecksum {
+		return fmt.Errorf("checksum failure")
+	}
+}
+
 // copyFileContents actually copies bytes from src to dst.  On any error, an
 // attempt is made to clean up the state of the filesystem (though this is not
 // guaranteed) and the first error encountered is returned.  i.e., if there's a
