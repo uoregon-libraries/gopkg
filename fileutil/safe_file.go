@@ -26,6 +26,7 @@ type SafeFile struct {
 	tempName  string
 	finalPath string
 	err       error
+	closed    bool
 }
 
 // NewSafeFile returns a new SafeFile construct, wrapping the given path
@@ -51,6 +52,12 @@ func (f *SafeFile) Write(p []byte) (n int, err error) {
 // removes the temp file from disk.  If an error occurs, an attempt is made to
 // remove all files from disk to avoid broken files, and the error is returned.
 func (f *SafeFile) Close() error {
+	// Closing a file twice isn't great, but it should simply return the error
+	// from f.temp.Close, not cancel the otherwise successful operation
+	if f.closed {
+		return f.temp.Close()
+	}
+
 	if f.err != nil {
 		f.Cancel()
 		return f.err
@@ -70,6 +77,7 @@ func (f *SafeFile) Close() error {
 		return f.err
 	}
 
+	f.closed = true
 	return os.Remove(f.tempName)
 }
 

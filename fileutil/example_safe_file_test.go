@@ -16,6 +16,9 @@ func makeWrite(fname string) *fileutil.SafeFile {
 func Example_minimal() {
 	var fname = "/tmp/blah.txt"
 	var f = makeWrite(fname)
+
+	// Closing twice shouldn't cause problems
+	f.Close()
 	f.Close()
 
 	var data, err = ioutil.ReadFile(fname)
