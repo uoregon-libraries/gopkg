@@ -7,7 +7,7 @@ import (
 	"github.com/uoregon-libraries/gopkg/fileutil"
 )
 
-func Example_minimal() {
+func ExampleSafeFile() {
 	var testOut = []byte("This is a test.\n\nA what?\n\nA test.\n\nA what?\n\nA test.\n\nOh, a test.\n")
 	var fname = "/tmp/blah.txt"
 	var f = fileutil.NewSafeFile(fname)
