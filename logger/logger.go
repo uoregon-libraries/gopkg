@@ -91,11 +91,15 @@ func standardSimpleLogger() *SimpleLogger {
 	}
 }
 
+// Let's make sure if there's a problem pulling the app name, we know right at
+// the beginning of the app
+var defaultName = filepath.Base(os.Args[0])
+
 // New returns an appropriate Logger that filters logs which are less
 // important than the given log level.  If log level "DEBUG" is chosen, nothing
 // is filtered.
 func New(level LogLevel) *Logger {
-	return Named(filepath.Base(os.Args[0]), level)
+	return Named(defaultName, level)
 }
 
 // Named returns a logger using the given name instead of defaulting to the
