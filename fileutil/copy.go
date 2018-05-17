@@ -93,7 +93,7 @@ func copyRecursive(srcPath, dstPath string) error {
 
 // CRC32 returns the checksum of the given file.  This is intended for
 // verifying file copies immediately after the copy happens.  It should not be
-// relied upon to detect bitrot or malicious file changes.
+// relied upon to detect malicious file changes.
 func CRC32(file string) (string, error) {
 	var f, err = os.Open(file)
 	if err != nil {
