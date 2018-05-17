@@ -78,22 +78,9 @@ func copyRecursive(srcPath, dstPath string) error {
 			}
 
 		case file.IsRegular():
-			err = copyFileContents(srcFull, dstFull)
+			err = CopyVerify(srcFull, dstFull)
 			if err != nil {
-				return fmt.Errorf("unable to copy %q to %q: %s", srcFull, dstFull, err)
-			}
-
-			var srcChecksum, dstChecksum string
-			srcChecksum, err = CRC32(srcFull)
-			if err != nil {
-				return fmt.Errorf("unable to get source file's checksum: %s", err)
-			}
-			dstChecksum, err = CRC32(dstFull)
-			if err != nil {
-				return fmt.Errorf("unable to get destination file's checksum: %s", err)
-			}
-			if srcChecksum != dstChecksum {
-				return fmt.Errorf("checksum failure")
+				return err
 			}
 
 		default:
