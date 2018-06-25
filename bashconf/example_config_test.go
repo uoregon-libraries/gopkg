@@ -39,6 +39,19 @@ BAD_FLOAT="0.75x"
 # Now files are supported!
 FILE="/etc/passwd"
 BAD_FILE="/etc/foobarblah"
+
+# And bools!  Below are all supported ways to handle a boolean in bashconf
+ON=on
+YES=yes
+TRUE=true
+ONE=1
+OFF=off
+NO=no
+FALSE=false
+ZERO=0
+
+# "yup" is not supported for booleans.  Sorry, children.
+BAD_BOOL=yup
 `
 
 func Example() {
@@ -59,6 +72,16 @@ func Example() {
 		EnvVar    string  `setting:"ENVONLY"`
 		File      string  `setting:"FILE" type:"file"`
 		BadFile   string  `setting:"BAD_FILE" type:"file"`
+
+		BTrue1  bool `setting:"ON" type:"bool"`
+		BTrue2  bool `setting:"YES" type:"bool"`
+		BTrue3  bool `setting:"TRUE" type:"bool"`
+		BTrue4  bool `setting:"ONE" type:"bool"`
+		BFalse1 bool `setting:"OFF" type:"bool"`
+		BFalse2 bool `setting:"NO" type:"bool"`
+		BFalse3 bool `setting:"FALSE" type:"bool"`
+		BFalse4 bool `setting:"ZERO" type:"bool"`
+		BadBool bool `setting:"BAD_BOOL" type:"bool"`
 	}
 	var err = c.Store(&st)
 	fmt.Printf("Errors: %s\n", err)
@@ -72,6 +95,8 @@ func Example() {
 	fmt.Printf("st.EnvVar: %q\n", st.EnvVar)
 	fmt.Printf("st.File: %q\n", st.File)
 	fmt.Printf("st.BadFile: %q\n", st.BadFile)
+	fmt.Printf("BTrue*: %v %v %v %v\n", st.BTrue1, st.BTrue2, st.BTrue3, st.BTrue4)
+	fmt.Printf("BFalse*: %v %v %v %v\n", st.BFalse1, st.BFalse2, st.BFalse3, st.BFalse4)
 
 	c.EnvironmentOverrides(true)
 	c.Store(&st)
@@ -83,7 +108,7 @@ func Example() {
 
 	// Output:
 	// SOMEARG is "5"; SOMEARG2 is "6"
-	// Errors: invalid configuration: "BAD_URL" ("ftp://uoregon.edu") is not a valid URL: must be http(s), "BAD_NUMBER" ("x") is not a valid integer, "BAD_FLOAT" ("0.75x") is not a valid float, "BAD_FILE" ("/etc/foobarblah") is not a file
+	// Errors: invalid configuration: "BAD_URL" ("ftp://uoregon.edu") is not a valid URL: must be http(s), "BAD_NUMBER" ("x") is not a valid integer, "BAD_FLOAT" ("0.75x") is not a valid float, "BAD_FILE" ("/etc/foobarblah") is not a file, "BAD_BOOL" ("yup") is not a valid boolean
 	// st.Value: "foo bar"
 	// st.URLValue: "https://uoregon.edu"
 	// st.BadURL: "ftp://uoregon.edu"
@@ -94,6 +119,8 @@ func Example() {
 	// st.EnvVar: ""
 	// st.File: "/etc/passwd"
 	// st.BadFile: "/etc/foobarblah"
+	// BTrue*: true true true true
+	// BFalse*: false false false false
 	// st.EnvVar after allowing overrides: "foo"
 	// st.EnvVar after prefixing overrides: "bar"
 }

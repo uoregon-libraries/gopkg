@@ -60,6 +60,17 @@ func (c *Config) readTaggedFields(dest interface{}) (errors []string) {
 				errors = append(errors, fmt.Sprintf("%#v (%#v) is not a valid integer", sKey, val))
 			}
 			rVal.Field(i).SetInt(num)
+		case "bool":
+			val = strings.ToLower(val)
+			if val == "true" || val == "1" || val == "on" || val == "yes" {
+				rVal.Field(i).SetBool(true)
+				continue
+			}
+			if val == "false" || val == "0" || val == "off" || val == "no" {
+				rVal.Field(i).SetBool(false)
+				continue
+			}
+			errors = append(errors, fmt.Sprintf("%q (%q) is not a valid boolean", sKey, val))
 		case "url":
 			var u, err = url.Parse(val)
 			if err != nil {
