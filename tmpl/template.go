@@ -3,8 +3,10 @@
 package tmpl
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
+	"io"
 	"path/filepath"
 	"strings"
 )
@@ -44,6 +46,19 @@ type Template struct {
 func (t *Template) Clone() (*Template, error) {
 	var tmpl, err = t.Template.Clone()
 	return &Template{tmpl, t.Name}, err
+}
+
+// BufferedExecute attempts to render the template to the given writer via its
+// Execute method.  The template output will only be written to w if there are
+// no errors, rather than rendering a half-complete page.
+func (t *Template) BufferedExecute(w io.Writer, data interface{}) error {
+	var buf = new(bytes.Buffer)
+	var err = t.Execute(buf, data)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(w, buf)
+	return err
 }
 
 // TRoot wraps template.Template for use to spawn "real" templates.  The TRoot
