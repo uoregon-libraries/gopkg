@@ -32,7 +32,7 @@ var FuncMap = tmpl.FuncMap{
 	"IncludeJS":  IncludeJS,
 	"RawJS":      RawJS,
 	"Webroot":    func() string { return Webroot },
-	"Comment":    func() template.HTML { return template.HTML(fmt.Sprintf("<!-- %s -->", s)) },
+	"Comment":    func(s string) template.HTML { return template.HTML(fmt.Sprintf("<!-- %s -->", s)) },
 
 	"nl2br": func(s string) template.HTML {
 		var escaped = template.HTMLEscaper(s)
