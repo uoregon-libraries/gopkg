@@ -10,9 +10,9 @@ import (
 	"github.com/uoregon-libraries/gopkg/tmpl"
 )
 
-// Webroot must be set externally to tell us where we are within the main
-// website, such as "/reports", and is used to generate absolute paths to
-// various handlers and site assets
+// Webroot must be set externally if the app is hosted under a subpath, such as
+// "/reports", and is used to generate absolute paths to various handlers and
+// site assets
 var Webroot string
 
 // Static must be set externally if CSS, JS, images, and other static
