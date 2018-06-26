@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"path"
+	"strings"
 
 	"github.com/uoregon-libraries/gopkg/tmpl"
 )
@@ -31,6 +32,14 @@ var FuncMap = tmpl.FuncMap{
 	"IncludeJS":  IncludeJS,
 	"RawJS":      RawJS,
 	"Webroot":    func() string { return Webroot },
+	"Comment":    func() template.HTML { return template.HTML(fmt.Sprintf("<!-- %s -->", s)) },
+
+	"nl2br": func(s string) template.HTML {
+		var escaped = template.HTMLEscaper(s)
+		var replaced = strings.Replace(escaped, "\n", "<br />", -1)
+		return template.HTML(replaced)
+	},
+	"raw": func(s string) template.HTML { return template.HTML(s) },
 }
 
 // FullPath uses the webroot, if not empty, to join together all the path parts
