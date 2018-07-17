@@ -1,9 +1,12 @@
 package bagit
 
 import (
+	"fmt"
 	"os"
 	"sort"
 	"testing"
+
+	"github.com/uoregon-libraries/gopkg/assert"
 )
 
 func TestGenerateChecksums(t *testing.T) {
@@ -18,9 +21,7 @@ func TestGenerateChecksums(t *testing.T) {
 
 	b = New(path)
 	err = b.GenerateChecksums()
-	if err != nil {
-		t.Fatalf("Should have generated checksums successfully in %q, but got error (%s)", b.root, err)
-	}
+	assert.NilError(err, fmt.Sprintf("generating checksums in %q", b.root), t)
 
 	// Sort the list for easier comparison - filepath.Walk should already do
 	// this, but I can't stand tests that stop passing just because of sorting
@@ -33,14 +34,9 @@ func TestGenerateChecksums(t *testing.T) {
 		"55f8718109829bf506b09d8af615b9f107a266e19f7a311039d1035f180b22d4", // test.txt's "sha256sum" value
 	}
 
-	if len(b.Checksums) != len(expectedChecksums) {
-		t.Errorf("Checksum list should have had %d items, but had %d", len(expectedChecksums), len(b.Checksums))
-	}
+	assert.Equal(len(expectedChecksums), len(b.Checksums), "checksum list length", t)
 
 	for i, ck := range b.Checksums {
-		t.Logf("Checksum: %#v", ck)
-		if ck.Checksum != expectedChecksums[i] {
-			t.Errorf("Checksum for %q was %q, but should have been %q", ck.Path, ck.Checksum, expectedChecksums[i])
-		}
+		assert.Equal(expectedChecksums[i], ck.Checksum, "checksum for " + ck.Path, t)
 	}
 }
