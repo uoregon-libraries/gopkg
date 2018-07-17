@@ -49,6 +49,16 @@ func failure(caller *Caller, message string, t *testing.T) {
 	t.FailNow()
 }
 
+// NilError failes if err isn't nil, printing it out in the failure message
+func NilError(err error, message string, t *testing.T) {
+	caller := getCallerName(1)
+	if err != nil {
+		failure(caller, fmt.Sprintf(`Expected no error, but got %#v - %s`, err, message), t)
+		return
+	}
+	success(caller, message, t)
+}
+
 // True fails the tests if `expression` isn't the boolean value `true`
 func True(expression bool, message string, t *testing.T) {
 	caller := getCallerName(1)
