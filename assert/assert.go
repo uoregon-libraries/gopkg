@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-var re = regexp.MustCompile(`^.*jp2tileserver\.(.*)$`)
+var re = regexp.MustCompile(`^.*/`)
 
 // Caller represents data used by an assertion to show the file/function/line
 // of where an assertion went wrong, rather than using the built-in system
@@ -33,7 +33,7 @@ func getCallerName(skip int) *Caller {
 	fn := runtime.FuncForPC(pc)
 	return &Caller{
 		Func:     fn,
-		Name:     re.ReplaceAllString(fn.Name(), "$1"),
+		Name:     re.ReplaceAllString(fn.Name(), ""),
 		Filename: file,
 		Line:     line,
 	}
