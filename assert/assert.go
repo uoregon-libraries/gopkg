@@ -1,6 +1,4 @@
-// Package assert offers some very simple helper methods for testing.  Not
-// meant for external use per se, though there's nothing tying this to our
-// codebase / project.
+// Package assert offers some very simple helper methods for testing
 //
 // Assertion methods (Equal, True, False, etc) expect a `message` string to be
 // passed in, which should be a simple explanation that will help you
