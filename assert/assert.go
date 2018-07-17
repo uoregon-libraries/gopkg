@@ -40,12 +40,12 @@ func getCallerName(skip int) *Caller {
 }
 
 func success(caller *Caller, message string, t *testing.T) {
-	fmt.Printf("\033[32mok\033[0m        %s(): %s\n", caller.Name, message)
+	t.Logf("    ok: %s(): %s", caller.Name, message)
 }
 
 func failure(caller *Caller, message string, t *testing.T) {
-	fmt.Printf("\033[31;1mnot ok\033[0m    %s(): %s\n", caller.Name, message)
-	fmt.Printf("          - %s:%d\n", caller.Filename, caller.Line)
+	t.Errorf("not ok: %s(): %s", caller.Name, message)
+	t.Logf("        - %s:%d", caller.Filename, caller.Line)
 	t.FailNow()
 }
 
