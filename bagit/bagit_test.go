@@ -37,6 +37,6 @@ func TestGenerateChecksums(t *testing.T) {
 	assert.Equal(len(expectedChecksums), len(b.Checksums), "checksum list length", t)
 
 	for i, ck := range b.Checksums {
-		assert.Equal(expectedChecksums[i], ck.Checksum, "checksum for " + ck.Path, t)
+		assert.Equal(expectedChecksums[i], ck.Checksum, "checksum for "+ck.Path, t)
 	}
 }
