@@ -12,7 +12,7 @@ import (
 // writing process when errors occurred.
 type WriteCancelCloser interface {
 	io.WriteCloser
-	func Cancel()
+	Cancel()
 }
 
 // SafeFile wraps the process of creating a temporary file, writing to it,
