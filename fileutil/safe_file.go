@@ -7,20 +7,24 @@ import (
 	"os"
 )
 
+// WriteCancelCloser is an io.WriteCloser which also exposes a cancel method so
+// a writer can (attempt to) clean up anything it may have left behind in the
+// writing process when errors occurred.
+type WriteCancelCloser interface {
+	io.WriteCloser
+	func Cancel()
+}
+
 // SafeFile wraps the process of creating a temporary file, writing to it,
 // copying it to the final file once all writing is successful, and then
 // deleting the temp file.  This reduces the opportunities for errors
 // (file-writing or program logic) to leave behind remnants of files.
 //
-// SafeFile implements io.WriteCloser for general-case usage, but also exposes
-// a Cancel() method so callers can state that something failed and the file
-// shouldn't be copied to its final location.
-//
-// Errors are returned from WriteCloser methods, but are also stored internally
-// to allow the SafeFile to automatically skip certain methods and clean up
-// after itself for simpler use-cases.  This means that when errors occur which
-// aren't related to the caller's logic (e.g., an error is returned by Write),
-// calling Cancel is unnecessary.
+// Errors are returned from Write and Close methods, but are also stored
+// internally to allow the SafeFile to automatically skip certain methods and
+// clean up after itself for simpler use-cases.  This means that when errors
+// occur which aren't related to the caller's logic (e.g., an error is returned
+// by Write), calling Cancel is unnecessary.
 type SafeFile struct {
 	temp      io.WriteCloser
 	tempName  string
