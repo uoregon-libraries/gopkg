@@ -26,7 +26,7 @@ type WriteCancelCloser interface {
 // occur which aren't related to the caller's logic (e.g., an error is returned
 // by Write), calling Cancel is unnecessary.
 type SafeFile struct {
-	temp      io.WriteCloser
+	temp      *os.File
 	tempName  string
 	finalPath string
 	err       error
@@ -49,6 +49,16 @@ func (f *SafeFile) Write(p []byte) (n int, err error) {
 	}
 
 	n, f.err = f.temp.Write(p)
+	return n, f.err
+}
+
+// WriteAt delegates to the temporary file handle so we can use a SafeFile when WriteAt is used
+func (f *SafeFile) WriteAt(p []byte, off int64) (n int, err error) {
+	if f.err != nil {
+		return 0, fmt.Errorf("cannot write to SafeFile with errors")
+	}
+
+	n, f.err = f.temp.WriteAt(p, off)
 	return n, f.err
 }
 
