@@ -36,10 +36,14 @@ type SafeFile struct {
 // NewSafeFile returns a new SafeFile construct, wrapping the given path
 func NewSafeFile(path string) *SafeFile {
 	var f, err = ioutil.TempFile("", "")
-	if err != nil {
+	var sf = &SafeFile{temp: f, finalPath: path, err: err}
+	if err == nil {
+		sf.tempName = f.Name()
+	} else {
 		err = fmt.Errorf("couldn't generate temp file: %s", err)
 	}
-	return &SafeFile{temp: f, tempName: f.Name(), finalPath: path, err: err}
+
+	return sf
 }
 
 // Write delegates to the temporary file handle
