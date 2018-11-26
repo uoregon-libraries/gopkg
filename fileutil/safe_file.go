@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sync"
 )
 
 // WriteCancelCloser is an io.WriteCloser which also exposes a cancel method so
@@ -26,6 +27,7 @@ type WriteCancelCloser interface {
 // occur which aren't related to the caller's logic (e.g., an error is returned
 // by Write), calling Cancel is unnecessary.
 type SafeFile struct {
+	sync.Mutex
 	temp      *os.File
 	tempName  string
 	finalPath string
@@ -56,8 +58,13 @@ func (f *SafeFile) Write(p []byte) (n int, err error) {
 	return n, f.err
 }
 
-// WriteAt delegates to the temporary file handle so we can use a SafeFile when WriteAt is used
+// WriteAt delegates to the temporary file handle so we can use a SafeFile when
+// WriteAt is used.  Since we check and store internal state (errors), this is
+// a mutex-locked operation even if writes could otherwise be concurrent.
 func (f *SafeFile) WriteAt(p []byte, off int64) (n int, err error) {
+	f.Lock()
+	defer f.Unlock()
+
 	if f.err != nil {
 		return 0, fmt.Errorf("cannot write to SafeFile with errors")
 	}
