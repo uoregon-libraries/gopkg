@@ -57,11 +57,11 @@ func (m *Middleware) NoCache(next http.Handler) http.Handler {
 	})
 }
 
-// requestLog centralizes the log format and what data we log for any request
+// Log centralizes the log format and what data we log for any request
 // as well as capturing the status and duration of the "real" request.
 // Generally you'll want this to be the final wrapper around any other
 // middleware to get valid timing.
-func (m *Middleware) requestLog(w http.ResponseWriter, req *http.Request, next http.Handler, logfn func(format string, args ...interface{}), prefix string) {
+func (m *Middleware) Log(w http.ResponseWriter, req *http.Request, next http.Handler, logfn func(format string, args ...interface{}), prefix string) {
 	var sr = statusrecorder.New(w)
 	var start = time.Now()
 	next.ServeHTTP(sr, req)
@@ -72,7 +72,7 @@ func (m *Middleware) requestLog(w http.ResponseWriter, req *http.Request, next h
 // RequestLog uses the logger to write an info-level log for a page request
 func (m *Middleware) RequestLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		m.requestLog(w, req, next, logger.Infof, "Request")
+		m.Log(w, req, next, logger.Infof, "Request")
 	})
 }
 
@@ -81,6 +81,6 @@ func (m *Middleware) RequestLog(next http.Handler) http.Handler {
 // more easily be filtered to avoid spam when unimportant requests occur.
 func (m *Middleware) RequestStaticAssetLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		m.requestLog(w, req, next, logger.Debugf, "Asset Request")
+		m.Log(w, req, next, logger.Debugf, "Asset Request")
 	})
 }
