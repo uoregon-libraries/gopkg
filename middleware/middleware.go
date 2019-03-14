@@ -72,7 +72,7 @@ func (m *Middleware) Log(w http.ResponseWriter, req *http.Request, next http.Han
 // RequestLog uses the logger to write an info-level log for a page request
 func (m *Middleware) RequestLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		m.Log(w, req, next, logger.Infof, "Request")
+		m.Log(w, req, next, m.Logger.Infof, "Request")
 	})
 }
 
@@ -81,6 +81,6 @@ func (m *Middleware) RequestLog(next http.Handler) http.Handler {
 // more easily be filtered to avoid spam when unimportant requests occur.
 func (m *Middleware) RequestStaticAssetLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		m.Log(w, req, next, logger.Debugf, "Asset Request")
+		m.Log(w, req, next, m.Logger.Debugf, "Asset Request")
 	})
 }
