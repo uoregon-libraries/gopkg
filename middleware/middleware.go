@@ -65,7 +65,7 @@ func (m *Middleware) Log(w http.ResponseWriter, req *http.Request, next http.Han
 	var sr = statusrecorder.New(w)
 	var start = time.Now()
 	next.ServeHTTP(sr, req)
-	var ms = time.Since(start).Seconds() / 1000
+	var ms = time.Since(start).Seconds() * 1000
 	logfn("%s: [%s] %s - %d (%0.3fms)", prefix, m.ClientIdentity(req), req.URL, sr.Status, ms)
 }
 
