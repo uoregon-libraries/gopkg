@@ -33,3 +33,15 @@ func (st *Store) Session(w http.ResponseWriter, req *http.Request) (*Session, er
 	}
 	return &Session{s, w, req}, nil
 }
+
+// NewSession instantiates a new session rather than trying to retrieve an
+// existing session for cases where an existing session is unreadable for some
+// reason (such as the cookie secret changing)
+func (st *Store) NewSession(w http.ResponseWriter, req *http.Request) (sess *Session, err error) {
+	var s *sessions.Session
+	s, err = st.store.New(req, st.name)
+	if err != nil {
+		err = fmt.Errorf("unable to instantiate a new session: %s", err)
+	}
+	return &Session{s, w, req}, err
+}
