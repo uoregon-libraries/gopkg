@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"github.com/uoregon-libraries/gopkg/logger"
 )
 
 // Session wraps the gorilla session to provide a better API and to ensure an
@@ -30,12 +29,9 @@ func (s *Session) GetString(key string) string {
 }
 
 // SetString stores the key/value string pair to the session
-func (s *Session) SetString(key, val string) {
+func (s *Session) SetString(key, val string) error {
 	s.s.Values[key] = val
-	var err = s.s.Save(s.req, s.w)
-	if err != nil {
-		logger.Errorf("Unable to save session data: %s", err)
-	}
+	return s.s.Save(s.req, s.w)
 }
 
 // getFlash grabs the given key as a "flash" value from the session store.  If

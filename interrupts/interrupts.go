@@ -11,8 +11,8 @@ import (
 
 var isDone int32
 
-// Logger is set to the default logger, but can be overridden for custom behavior
-var Logger = logger.DefaultLogger
+// Logger is set to a default STDERR logger, but can be overridden for custom behavior
+var Logger = logger.Named("gopkg/pdf.ImageDPIs", logger.Debug)
 
 // TrapIntTerm catches interrupt and termination signals to let processes exit
 // more cleanly.  A second signal of either type will immediately end the

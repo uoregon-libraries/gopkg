@@ -9,6 +9,10 @@ import (
 	"github.com/uoregon-libraries/gopkg/logger"
 )
 
+// Logger is used in the ImageDPIs call to report information.  If not set, it
+// defaults to a STDERR logger.
+var Logger = logger.Named("gopkg/pdf.ImageDPIs", logger.Debug)
+
 // ImageDPI holds x and y dpis gathered from PDF images
 type ImageDPI struct {
 	X float64
@@ -22,9 +26,9 @@ func ImageDPIs(path string) []ImageDPI {
 	var cmd = exec.Command(cmdParts[0], cmdParts[1:]...)
 	var output, err = cmd.CombinedOutput()
 	if err != nil {
-		logger.Errorf(`Failed to run "%s": %s`, strings.Join(cmdParts, " "), err)
+		Logger.Errorf(`Failed to run "%s": %s`, strings.Join(cmdParts, " "), err)
 		for _, line := range bytes.Split(output, []byte("\n")) {
-			logger.Debugf("--> %s", line)
+			Logger.Debugf("--> %s", line)
 		}
 
 		return nil
@@ -44,7 +48,7 @@ func ImageDPIs(path string) []ImageDPI {
 
 		var parts = bytes.Fields(line)
 		if len(parts) < 15 {
-			logger.Errorf("Too few fields in line %d of %q output: %q", i+1, strings.Join(cmdParts, " "), line)
+			Logger.Errorf("Too few fields in line %d of %q output: %q", i+1, strings.Join(cmdParts, " "), line)
 			return nil
 		}
 
@@ -59,7 +63,7 @@ func ImageDPIs(path string) []ImageDPI {
 		// Then there are the cases where the size string is empty or so low we
 		// just don't care about the image
 		if sizeString == "-" || sizeString[len(sizeString)-1] == 'B' {
-			logger.Debugf("Invalid DPI information in line %d of %q output: %q (skipping: small image)",
+			Logger.Debugf("Invalid DPI information in line %d of %q output: %q (skipping: small image)",
 				i+1, strings.Join(cmdParts, " "), line)
 			continue
 		}
@@ -68,7 +72,7 @@ func ImageDPIs(path string) []ImageDPI {
 		var ydpi, _ = strconv.ParseFloat(ydpiString, 64)
 
 		if xdpi == 0 || ydpi == 0 {
-			logger.Errorf("Invalid DPI information in line %d of %q output: %q", i+1, strings.Join(cmdParts, " "), line)
+			Logger.Errorf("Invalid DPI information in line %d of %q output: %q", i+1, strings.Join(cmdParts, " "), line)
 			return nil
 		}
 

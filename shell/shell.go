@@ -22,7 +22,7 @@ type Cmd struct {
 
 // Command returns a generic Cmd which logs to stderr
 func Command(path string, args ...string) *Cmd {
-	return &Cmd{Cmd: exec.Command(path, args...), Logger: logger.DefaultLogger}
+	return &Cmd{Cmd: exec.Command(path, args...), Logger: logger.Named("gopkg/pdf.ImageDPIs", logger.Debug)}
 }
 
 // Exec runs the command, logging output on failure

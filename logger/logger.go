@@ -114,10 +114,6 @@ func Named(appName string, level LogLevel) *Logger {
 	return &Logger{&LeveledLogger{sl, level}}
 }
 
-// DefaultLogger gives an app semi-sane logging without creating and managing a
-// custom type
-var DefaultLogger = New(Debug)
-
 // Log is the central logger for all helpers to use, implementing the Loggable interface
 func (l *SimpleLogger) Log(level LogLevel, message string) {
 	var timeString = time.Now().Format(l.TimeFormat)
@@ -125,19 +121,9 @@ func (l *SimpleLogger) Log(level LogLevel, message string) {
 	fmt.Fprintln(l.Output, output+message)
 }
 
-// Debugf logs a debug-level message using the default logger
-func Debugf(format string, args ...interface{}) {
-	DefaultLogger.Debugf(format, args...)
-}
-
 // Debugf logs a debug-level message
 func (l *Logger) Debugf(format string, args ...interface{}) {
 	l.Log(Debug, fmt.Sprintf(format, args...))
-}
-
-// Infof logs an info-level message using the default logger
-func Infof(format string, args ...interface{}) {
-	DefaultLogger.Infof(format, args...)
 }
 
 // Infof logs an info-level message
@@ -145,19 +131,9 @@ func (l *Logger) Infof(format string, args ...interface{}) {
 	l.Log(Info, fmt.Sprintf(format, args...))
 }
 
-// Warnf logs a warn-level message using the default logger
-func Warnf(format string, args ...interface{}) {
-	DefaultLogger.Warnf(format, args...)
-}
-
 // Warnf logs a warn-level message
 func (l *Logger) Warnf(format string, args ...interface{}) {
 	l.Log(Warn, fmt.Sprintf(format, args...))
-}
-
-// Errorf logs an error-level message using the default logger
-func Errorf(format string, args ...interface{}) {
-	DefaultLogger.Errorf(format, args...)
 }
 
 // Errorf logs an error-level message
@@ -165,19 +141,9 @@ func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.Log(Err, fmt.Sprintf(format, args...))
 }
 
-// Criticalf logs a critical-level message using the default logger
-func Criticalf(format string, args ...interface{}) {
-	DefaultLogger.Criticalf(format, args...)
-}
-
 // Criticalf logs a critical-level message
 func (l *Logger) Criticalf(format string, args ...interface{}) {
 	l.Log(Crit, fmt.Sprintf(format, args...))
-}
-
-// Fatalf logs a critical-level message using the default logger, then exits
-func Fatalf(format string, args ...interface{}) {
-	DefaultLogger.Fatalf(format, args...)
 }
 
 // Fatalf logs a critical-level message, then exits
