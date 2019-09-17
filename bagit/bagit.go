@@ -78,6 +78,11 @@ func (b *Bag) GenerateChecksums() error {
 
 	b.Checksums = nil
 	err = filepath.Walk(dataPath, func(path string, info os.FileInfo, err error) error {
+		// Don't try to proceed if there's already an error!
+		if err != nil {
+			return err
+		}
+
 		if info.Mode().IsRegular() {
 			var chksum, err = b.getsum(path)
 			if err == nil {
