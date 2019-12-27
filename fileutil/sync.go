@@ -11,10 +11,11 @@ import (
 
 // SyncDirectory syncs files from srcPath to dstPath, copying any which are
 // missing or different.  Files are different if they're a different size or
-// checksum (MD5).  Anything that isn't a file or a directory returns an error.
-// This includes symlinks for now.  The operation stops on the first error, and
-// the partial copy is left in place.  Basic permissions (file mode) will by
-// preserved, though owner, group, ACLs, and other metadata will not.
+// checksum (MD5).  Notes:
+// - Anything that isn't a file or a directory returns an error; this includes symlinks for now
+// - The operation stops on the first error, and the partial copy is left in place
+// - Basic permissions (file mode) will by preserved, though owner, group, ACLs, and other metadata will not
+// - Files in dstPath which are not in srcPath will not be removed
 func SyncDirectory(srcPath, dstPath string) error {
 	var err error
 
