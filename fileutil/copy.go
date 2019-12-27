@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -60,7 +61,7 @@ func copyRecursive(srcPath, dstPath string) error {
 	}
 
 	var infos []os.FileInfo
-	infos, err = Readdir(srcPath)
+	infos, err = ioutil.ReadDir(srcPath)
 	if err != nil {
 		return fmt.Errorf("unable to read source directory %q: %s", srcPath, err)
 	}

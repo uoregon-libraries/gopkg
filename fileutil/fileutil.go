@@ -3,6 +3,7 @@
 package fileutil
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -58,9 +59,9 @@ func MustNotExist(path string) bool {
 	return err != nil && os.IsNotExist(err)
 }
 
-// ReaddirSorted calls Readdir and sorts the results
+// ReaddirSorted calls ioutil.ReadDir and sorts the results
 func ReaddirSorted(path string) ([]os.FileInfo, error) {
-	var fi, err = Readdir(path)
+	var fi, err = ioutil.ReadDir(path)
 	if err == nil {
 		sort.Sort(byName(fi))
 	}
