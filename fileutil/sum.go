@@ -26,3 +26,20 @@ func CRC32(file string) (string, error) {
 
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
+
+// SHA256 returns the checksum of the given file
+func SHA256(file string) ([]byte, error) {
+	var f, err = os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var h = sha256.New()
+	_, err = io.Copy(h, f)
+	if err != nil {
+		return nil, err
+	}
+
+	return h.Sum(nil), nil
+}
