@@ -64,7 +64,7 @@ func syncRecursive(srcPath, dstPath string) error {
 	}
 	var mode = dirInfo.Mode() & os.ModePerm
 
-	err = os.MkdirAll(dstPath, 0700)
+	err = os.MkdirAll(dstPath, mode)
 	if err != nil {
 		return fmt.Errorf("unable to create directory %q: %s", dstPath, err)
 	}
