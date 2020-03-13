@@ -54,7 +54,13 @@ func CopyDirectory(srcPath, dstPath string) error {
 
 // copyRecursive is the actual file-copying function which CopyDirectory uses
 func copyRecursive(srcPath, dstPath string) error {
-	var err = os.MkdirAll(dstPath, 0700)
+	var dirInfo, err = os.Stat(srcPath)
+	if err != nil {
+		return fmt.Errorf("unable to stat source directory %q: %s", srcPath, err)
+	}
+	var mode = dirInfo.Mode() & os.ModePerm
+
+	err = os.MkdirAll(dstPath, mode)
 	if err != nil {
 		return fmt.Errorf("unable to create directory %q: %s", dstPath, err)
 	}
@@ -82,6 +88,7 @@ func copyRecursive(srcPath, dstPath string) error {
 			if err != nil {
 				return err
 			}
+			os.Chmod(dstFull, info.Mode()&os.ModePerm)
 
 		default:
 			return fmt.Errorf("unable to copy special file %q", srcFull)
