@@ -42,7 +42,7 @@ func NewSafeFile(path string) *SafeFile {
 	if err == nil {
 		sf.tempName = f.Name()
 	} else {
-		err = fmt.Errorf("couldn't generate temp file: %s", err)
+		sf.err = fmt.Errorf("couldn't generate temp file: %w", err)
 	}
 
 	return sf
