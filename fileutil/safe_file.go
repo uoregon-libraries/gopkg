@@ -31,18 +31,18 @@ type SafeFile struct {
 	temp      *os.File
 	tempName  string
 	finalPath string
-	err       error
+	Err       error
 	closed    bool
 }
 
 // NewSafeFile returns a new SafeFile construct, wrapping the given path
 func NewSafeFile(path string) *SafeFile {
 	var f, err = ioutil.TempFile("", "")
-	var sf = &SafeFile{temp: f, finalPath: path, err: err}
+	var sf = &SafeFile{temp: f, finalPath: path, Err: err}
 	if err == nil {
 		sf.tempName = f.Name()
 	} else {
-		sf.err = fmt.Errorf("couldn't generate temp file: %w", err)
+		sf.Err = fmt.Errorf("couldn't generate temp file: %w", err)
 	}
 
 	return sf
@@ -50,12 +50,12 @@ func NewSafeFile(path string) *SafeFile {
 
 // Write delegates to the temporary file handle
 func (f *SafeFile) Write(p []byte) (n int, err error) {
-	if f.err != nil {
+	if f.Err != nil {
 		return 0, fmt.Errorf("cannot write to SafeFile with errors")
 	}
 
-	n, f.err = f.temp.Write(p)
-	return n, f.err
+	n, f.Err = f.temp.Write(p)
+	return n, f.Err
 }
 
 // WriteAt delegates to the temporary file handle so we can use a SafeFile when
@@ -65,12 +65,12 @@ func (f *SafeFile) WriteAt(p []byte, off int64) (n int, err error) {
 	f.Lock()
 	defer f.Unlock()
 
-	if f.err != nil {
+	if f.Err != nil {
 		return 0, fmt.Errorf("cannot write to SafeFile with errors")
 	}
 
-	n, f.err = f.temp.WriteAt(p, off)
-	return n, f.err
+	n, f.Err = f.temp.WriteAt(p, off)
+	return n, f.Err
 }
 
 // Close closes the temporary file, copies its data to the final location, and
@@ -83,23 +83,23 @@ func (f *SafeFile) Close() error {
 		return f.temp.Close()
 	}
 
-	if f.err != nil {
+	if f.Err != nil {
 		f.Cancel()
-		return f.err
+		return f.Err
 	}
 
 	var err = f.temp.Close()
 	if err != nil {
 		f.Cancel()
-		f.err = fmt.Errorf("unable to close temp file: %s", f.err)
-		return f.err
+		f.Err = fmt.Errorf("unable to close temp file: %s", f.Err)
+		return f.Err
 	}
 
 	err = CopyVerify(f.tempName, f.finalPath)
 	if err != nil {
 		f.Cancel()
-		f.err = fmt.Errorf("unable to copy temp file: %s", f.err)
-		return f.err
+		f.Err = fmt.Errorf("unable to copy temp file: %s", f.Err)
+		return f.Err
 	}
 
 	f.closed = true
