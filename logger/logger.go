@@ -147,16 +147,16 @@ func esc(s string) string {
 func (l *SimpleLogger) StructuredLog(level LogLevel, message string) {
 	var parts = [][2]string{
 		{"time", time.Now().Format(l.TimeFormat)},
-		{"level", level.String()},
 		{"app", l.AppName},
+		{"level", level.String()},
 		{"message", message},
 	}
 
-	var output string
+	var outputParts []string
 	for _, part := range parts {
-		output += esc(part[0]) + "=" + esc(part[1])
+		outputParts = append(outputParts, esc(part[0])+`="`+esc(part[1])+`"`)
 	}
-	fmt.Fprintln(l.Output, output)
+	fmt.Fprintln(l.Output, strings.Join(outputParts, " "))
 }
 
 // Debugf logs a debug-level message
