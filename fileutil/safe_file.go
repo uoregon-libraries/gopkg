@@ -111,4 +111,5 @@ func (f *SafeFile) Cancel() {
 	f.temp.Close()
 	os.Remove(f.tempName)
 	os.Remove(f.finalPath)
+	f.closed = true
 }
