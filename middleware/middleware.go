@@ -30,7 +30,7 @@ type Middleware struct {
 // New returns a default Middleware structure suitable for use when an
 // application is not behind any proxy
 func New() *Middleware {
-	return &Middleware{Logger: logger.New(logger.Debug)}
+	return &Middleware{Logger: logger.New(logger.Debug, false)}
 }
 
 // NewApache returns a Middleware with values set up for Go running behind an

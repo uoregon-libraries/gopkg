@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -62,6 +63,7 @@ type SimpleLogger struct {
 	TimeFormat string
 	AppName    string
 	Output     io.Writer
+	LogWriter  func(level LogLevel, message string)
 }
 
 // Logger wraps any loggable to add convenience methods for each log level:
@@ -85,10 +87,13 @@ func (ll *LeveledLogger) Log(level LogLevel, message string) {
 }
 
 func standardSimpleLogger() *SimpleLogger {
-	return &SimpleLogger{
+	var s = &SimpleLogger{
 		TimeFormat: TimeFormat,
 		Output:     os.Stderr,
 	}
+	s.LogWriter = s.DefaultLog
+
+	return s
 }
 
 // Let's make sure if there's a problem pulling the app name, we know right at
@@ -98,15 +103,18 @@ var defaultName = filepath.Base(os.Args[0])
 // New returns an appropriate Logger that filters logs which are less
 // important than the given log level.  If log level "DEBUG" is chosen, nothing
 // is filtered.
-func New(level LogLevel) *Logger {
-	return Named(defaultName, level)
+func New(level LogLevel, structured bool) *Logger {
+	return Named(defaultName, level, structured)
 }
 
 // Named returns a logger using the given name instead of defaulting to the
 // application's command-line name
-func Named(appName string, level LogLevel) *Logger {
+func Named(appName string, level LogLevel, structured bool) *Logger {
 	var sl = standardSimpleLogger()
 	sl.AppName = appName
+	if structured {
+		sl.LogWriter = sl.StructuredLog
+	}
 	if level <= Debug {
 		return &Logger{sl}
 	}
@@ -114,11 +122,41 @@ func Named(appName string, level LogLevel) *Logger {
 	return &Logger{&LeveledLogger{sl, level}}
 }
 
-// Log is the central logger for all helpers to use, implementing the Loggable interface
+// Log delegates to the LogWriter to format the message
 func (l *SimpleLogger) Log(level LogLevel, message string) {
+	l.LogWriter(level, message)
+}
+
+// DefaultLog is the default centralized logger for all helpers to use,
+// implementing the Loggable interface
+func (l *SimpleLogger) DefaultLog(level LogLevel, message string) {
 	var timeString = time.Now().Format(l.TimeFormat)
 	var output = fmt.Sprintf("%s - %s - %s - ", timeString, l.AppName, level)
 	fmt.Fprintln(l.Output, output+message)
+}
+
+// esc escapes backslashes and quotes
+func esc(s string) string {
+	s = strings.Replace(s, `\`, `\\`, -1)
+	s = strings.Replace(s, `"`, `\"`, -1)
+	return s
+}
+
+// StructuredLog is an outputter that just prints key-value pairs in a way
+// that's more machine-readable but still mostly human-friendly
+func (l *SimpleLogger) StructuredLog(level LogLevel, message string) {
+	var parts = [][2]string{
+		{"time", time.Now().Format(l.TimeFormat)},
+		{"level", level.String()},
+		{"app", l.AppName},
+		{"message", message},
+	}
+
+	var output string
+	for _, part := range parts {
+		output += esc(part[0]) + "=" + esc(part[1])
+	}
+	fmt.Fprintln(l.Output, output)
 }
 
 // Debugf logs a debug-level message
