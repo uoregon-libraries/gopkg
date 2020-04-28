@@ -72,6 +72,11 @@ func TestStructured(t *testing.T) {
 			message: "plain error message",
 			want:    `time="n/a" app="structured" level="ERROR" message="plain error message"`,
 		},
+		"message with newline": {
+			fn:      l.Infof,
+			message: "this has a \nnewline",
+			want:    `time="n/a" app="structured" level="INFO" message="this has a <CR>newline"`,
+		},
 	}
 
 	for _, tc := range tests {

@@ -139,6 +139,9 @@ func (l *SimpleLogger) DefaultLog(level LogLevel, message string) {
 func esc(s string) string {
 	s = strings.Replace(s, `\`, `\\`, -1)
 	s = strings.Replace(s, `"`, `\"`, -1)
+	s = strings.Replace(s, "\r\n", "<CRLF>", -1)
+	s = strings.Replace(s, "\n", "<CR>", -1)
+	s = strings.Replace(s, "\r", "<LF>", -1)
 	return s
 }
 
