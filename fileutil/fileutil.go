@@ -69,6 +69,20 @@ func ReaddirSorted(path string) ([]os.FileInfo, error) {
 	return fi, err
 }
 
+// ReaddirSortedNumeric returns the results of ioutil.ReadDir sorted in a
+// "human-friendly" way such that, e.g., 1.pdf is followed by 2.pdf, etc., and
+// then later on 10.pdf.  Similar to `sort -n`.
+func ReaddirSortedNumeric(path string) ([]os.FileInfo, error) {
+	var list, err = ioutil.ReadDir(path)
+	if err != nil {
+		return list, err
+	}
+
+	sortFileInfosNumerically(list)
+
+	return list, err
+}
+
 // byName implements sort.Interface for sorting os.FileInfo data by name
 type byName []os.FileInfo
 
@@ -79,6 +93,58 @@ func (n byName) Less(i, j int) bool { return n[i].Name() < n[j].Name() }
 // SortFileInfos sorts a slice of os.FileInfo data by the underlying filename
 func SortFileInfos(list []os.FileInfo) {
 	sort.Sort(byName(list))
+}
+
+// sortFileInfosNumerically sorts a slice of os.FileInfo data by the underlying filename
+func sortFileInfosNumerically(list []os.FileInfo) {
+	sort.Slice(list, numericInfoSortFn(list))
+}
+
+// numberify stripts preceding zeros and everything after the first non-numeric
+// byte in order to make a string into a valid int
+//
+// This is basically a stripped-down Atoi that has no error cases and allows
+// things like "002312dafdsa.pdf" to return 2312.
+func numberify(s string) int {
+	s0 := s
+	if s[0] == '-' || s[0] == '+' {
+		s = s[1:]
+		if len(s) < 1 {
+			return 0
+		}
+	}
+
+	// This excludes many valid ints, but it's easier this way
+	if len(s) > 9 {
+		return 0
+	}
+
+	n := 0
+	for _, ch := range []byte(s) {
+		ch -= '0'
+		if ch > 9 {
+			break
+		}
+		n = n*10 + int(ch)
+	}
+	if s0[0] == '-' {
+		n = -n
+	}
+	return n
+}
+
+func numericInfoSortFn(infos []os.FileInfo) func(i, j int) bool {
+	return func(i, j int) bool {
+		var iName = infos[i].Name()
+		var jName = infos[j].Name()
+		var iVal = numberify(iName)
+		var jVal = numberify(jName)
+
+		if iVal == jVal || iVal == 0 || jVal == 0 {
+			return iName < jName
+		}
+		return iVal < jVal
+	}
 }
 
 // FindIf iterates over all directory entries in the given path, running the
