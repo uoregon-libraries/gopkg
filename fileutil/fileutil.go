@@ -78,8 +78,7 @@ func ReaddirSortedNumeric(path string) ([]os.FileInfo, error) {
 		return list, err
 	}
 
-	sortFileInfosNumerically(list)
-
+	SortFileInfosNumerically(list)
 	return list, err
 }
 
@@ -95,8 +94,10 @@ func SortFileInfos(list []os.FileInfo) {
 	sort.Sort(byName(list))
 }
 
-// sortFileInfosNumerically sorts a slice of os.FileInfo data by the underlying filename
-func sortFileInfosNumerically(list []os.FileInfo) {
+// SortFileInfosNumerically sorts a slice of os.FileInfo data by the underlying
+// filename, treating names as numeric where possible.  e.g., "1.pdf" and
+// "2.pdf" are both before "10.pdf".
+func SortFileInfosNumerically(list []os.FileInfo) {
 	sort.Slice(list, numericInfoSortFn(list))
 }
 
