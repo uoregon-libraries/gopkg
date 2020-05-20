@@ -79,7 +79,7 @@ func TestNumericFilenameSort(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			sortFileInfosNumerically(tc.list)
+			SortFileInfosNumerically(tc.list)
 			var fnames = make([]string, len(tc.list))
 			for i, info := range tc.list {
 				fnames[i] = info.Name()
