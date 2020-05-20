@@ -11,8 +11,7 @@ import (
 // CopyDirectory attempts to copy all files from srcPath to dstPath
 // recursively.  dstPath must not exist.  Anything that isn't a file or a
 // directory returns an error.  This includes symlinks for now.  The operation
-// stops on the first error, and the partial copy is left in place.  Currently,
-// permissions are not preserved.
+// stops on the first error, and the partial copy is left in place.
 func CopyDirectory(srcPath, dstPath string) error {
 	var err error
 
