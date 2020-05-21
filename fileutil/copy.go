@@ -76,6 +76,26 @@ func CopyDirectory(srcPath, dstPath string) error {
 	return copyRecursive(srcPath, dstPath, CopyVerify)
 }
 
+// LinkDirectory attempts to hard-link all files from srcPath to dstPath
+// recursively.  dstPath must not exist.  Anything that isn't a file or a
+// directory returns an error.  This includes symlinks for now.  The operation
+// stops on the first error, and the partial copy is left in place.
+func LinkDirectory(srcPath, dstPath string) error {
+	var err error
+
+	srcPath, dstPath, err = getAbsPaths(srcPath, dstPath)
+	if err != nil {
+		return err
+	}
+
+	err = validateCopyDirs(srcPath, dstPath, true)
+	if err != nil {
+		return err
+	}
+
+	return copyRecursive(srcPath, dstPath, os.Link)
+}
+
 // copyFunc takes a source and destination (absolute paths), does something to
 // copy them (i.e., copy data, hard-link them, eventually maybe symlink), and
 // returns any errors which occur.
