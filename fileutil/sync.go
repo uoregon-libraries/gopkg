@@ -2,11 +2,7 @@ package fileutil
 
 import (
 	"bytes"
-	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strings"
 )
 
 // SyncDirectory syncs files from srcPath to dstPath, copying any which are
@@ -19,88 +15,17 @@ import (
 func SyncDirectory(srcPath, dstPath string) error {
 	var err error
 
-	// Figure out absolute paths for clarity
-	srcPath, err = filepath.Abs(srcPath)
+	srcPath, dstPath, err = getAbsPaths(srcPath, dstPath)
 	if err != nil {
-		return fmt.Errorf("source %q error: %s", srcPath, err)
+		return err
 	}
-	dstPath, err = filepath.Abs(dstPath)
+
+	err = validateCopyDirs(srcPath, dstPath, false)
 	if err != nil {
-		return fmt.Errorf("destination %q error: %s", dstPath, err)
+		return err
 	}
 
-	// Validate source exists
-	if !Exists(srcPath) {
-		return fmt.Errorf("source %q does not exist", srcPath)
-	}
-
-	// Destination parent must already exist
-	if !IsDir(filepath.Dir(dstPath)) {
-		return fmt.Errorf("destination's parent %q does not exist", dstPath)
-	}
-
-	// Get source path info and validate it's a directory
-	var srcInfo os.FileInfo
-	srcInfo, err = os.Stat(srcPath)
-	if err != nil {
-		return fmt.Errorf("source %q error: %s", srcPath, err)
-	}
-	if !srcInfo.IsDir() {
-		return fmt.Errorf("source %q is not a directory", srcPath)
-	}
-
-	return syncRecursive(srcPath, dstPath)
-}
-
-// syncRecursive is the actual file-syncing function which SyncDirectory uses
-func syncRecursive(srcPath, dstPath string) error {
-	if strings.HasPrefix(dstPath, srcPath) {
-		return fmt.Errorf("cannot have destination under source")
-	}
-
-	var dirInfo, err = os.Stat(srcPath)
-	if err != nil {
-		return fmt.Errorf("unable to stat source directory %q: %s", srcPath, err)
-	}
-	var mode = dirInfo.Mode() & os.ModePerm
-
-	err = os.MkdirAll(dstPath, mode)
-	if err != nil {
-		return fmt.Errorf("unable to create directory %q: %s", dstPath, err)
-	}
-	os.Chmod(dstPath, mode)
-
-	var infos []os.FileInfo
-	infos, err = ioutil.ReadDir(srcPath)
-	if err != nil {
-		return fmt.Errorf("unable to read source directory %q: %s", srcPath, err)
-	}
-
-	for _, info := range infos {
-		var srcFull = filepath.Join(srcPath, info.Name())
-		var dstFull = filepath.Join(dstPath, info.Name())
-
-		var file = InfoToFile(info)
-		switch {
-		case file.IsDir():
-			err = syncRecursive(srcFull, dstFull)
-			if err != nil {
-				return err
-			}
-
-		case file.IsRegular():
-			err = syncFile(srcFull, dstFull)
-			if err != nil {
-				return err
-			}
-			os.Chmod(dstFull, info.Mode()&os.ModePerm)
-
-		default:
-			return fmt.Errorf("unable to copy special file %q", srcFull)
-		}
-	}
-
-	return nil
+	return copyRecursive(srcPath, dstPath, syncFile)
 }
 
 // syncFile checks the two files to see if they differ, and copies src to dest

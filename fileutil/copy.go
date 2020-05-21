@@ -6,31 +6,36 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
-// CopyDirectory attempts to copy all files from srcPath to dstPath
-// recursively.  dstPath must not exist.  Anything that isn't a file or a
-// directory returns an error.  This includes symlinks for now.  The operation
-// stops on the first error, and the partial copy is left in place.
-func CopyDirectory(srcPath, dstPath string) error {
+// getAbsPaths figures out absolute paths for a recursive copy operation
+func getAbsPaths(srcPath, dstPath string) (string, string, error) {
 	var err error
-
-	// Figure out absolute paths for clarity
 	srcPath, err = filepath.Abs(srcPath)
-	if err != nil {
-		return fmt.Errorf("source %q error: %s", srcPath, err)
+	if err == nil {
+		dstPath, err = filepath.Abs(dstPath)
 	}
-	dstPath, err = filepath.Abs(dstPath)
-	if err != nil {
-		return fmt.Errorf("destination %q error: %s", dstPath, err)
-	}
+	return srcPath, dstPath, err
+}
+
+// validateCopyDirs centralizes the common logic of ensuring a source and
+// destination path are at least semi-valid: the source exists and is a
+// directory, that the destination's parent dir exists, and optionally that the
+// destination does not exist.
+func validateCopyDirs(srcPath, dstPath string, failOnDestinationExists bool) error {
+	var err error
 
 	// Validate source exists and destination does not
 	if !Exists(srcPath) {
 		return fmt.Errorf("source %q does not exist", srcPath)
 	}
-	if !MustNotExist(dstPath) {
+	if failOnDestinationExists && !MustNotExist(dstPath) {
 		return fmt.Errorf("destination %q already exists", dstPath)
+	}
+
+	if strings.HasPrefix(dstPath, srcPath) {
+		return fmt.Errorf("cannot have destination under source")
 	}
 
 	// Destination parent must already exist
@@ -48,11 +53,37 @@ func CopyDirectory(srcPath, dstPath string) error {
 		return fmt.Errorf("source %q is not a directory", srcPath)
 	}
 
-	return copyRecursive(srcPath, dstPath)
+	return nil
 }
 
-// copyRecursive is the actual file-copying function which CopyDirectory uses
-func copyRecursive(srcPath, dstPath string) error {
+// CopyDirectory attempts to copy all files from srcPath to dstPath
+// recursively.  dstPath must not exist.  Anything that isn't a file or a
+// directory returns an error.  This includes symlinks for now.  The operation
+// stops on the first error, and the partial copy is left in place.
+func CopyDirectory(srcPath, dstPath string) error {
+	var err error
+
+	srcPath, dstPath, err = getAbsPaths(srcPath, dstPath)
+	if err != nil {
+		return err
+	}
+
+	err = validateCopyDirs(srcPath, dstPath, true)
+	if err != nil {
+		return err
+	}
+
+	return copyRecursive(srcPath, dstPath, CopyVerify)
+}
+
+// copyFunc takes a source and destination (absolute paths), does something to
+// copy them (i.e., copy data, hard-link them, eventually maybe symlink), and
+// returns any errors which occur.
+type copyFunc func(string, string) error
+
+// copyRecursive does the actual work of copying files, using a callback to
+// allow custom copying behavior
+func copyRecursive(srcPath, dstPath string, cpFunc copyFunc) error {
 	var dirInfo, err = os.Stat(srcPath)
 	if err != nil {
 		return fmt.Errorf("unable to stat source directory %q: %s", srcPath, err)
@@ -63,6 +94,9 @@ func copyRecursive(srcPath, dstPath string) error {
 	if err != nil {
 		return fmt.Errorf("unable to create directory %q: %s", dstPath, err)
 	}
+
+	// If the dir wasn't created, make sure we still set its mode
+	os.Chmod(dstPath, mode)
 
 	var infos []os.FileInfo
 	infos, err = ioutil.ReadDir(srcPath)
@@ -77,13 +111,13 @@ func copyRecursive(srcPath, dstPath string) error {
 		var file = InfoToFile(info)
 		switch {
 		case file.IsDir():
-			err = copyRecursive(srcFull, dstFull)
+			err = copyRecursive(srcFull, dstFull, cpFunc)
 			if err != nil {
 				return err
 			}
 
 		case file.IsRegular():
-			err = CopyVerify(srcFull, dstFull)
+			err = cpFunc(srcFull, dstFull)
 			if err != nil {
 				return err
 			}
