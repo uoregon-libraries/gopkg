@@ -9,14 +9,14 @@ err() {
 }
 
 IFS=''
-unformatted=$(find ./ -name "*.go" | xargs gofmt -l -s)
+unformatted=$(find ./ -name "*.go" | xargs goimports -l)
 linter=$(golint ./...)
 vet=$(go vet -printfuncs Debugf,Infof,Warnf,Errorf,Criticalf,Fatalf ./...  2>&1 || true)
 
 result=0
 
 if [[ $unformatted != "" ]]; then
-  err "gofmt reports issues:"
+  err "goimports reports issues:"
   err "---------------------"
   err $unformatted
   result=1
