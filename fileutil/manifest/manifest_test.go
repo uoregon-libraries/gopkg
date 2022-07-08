@@ -1,6 +1,8 @@
 package manifest
 
 import (
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -8,12 +10,12 @@ import (
 )
 
 func TestEquivalent(t *testing.T) {
-	var f1 = FileInfo{Name: "name1", Size: 1, Checksum: "checksum1"}
-	var f2 = FileInfo{Name: "name2", Size: 2, Checksum: "checksum2"}
-	var f3 = FileInfo{Name: "name3", Size: 3, Checksum: "checksum3"}
-	var f4 = FileInfo{Name: "name4", Size: 4, Checksum: "checksum4"}
-	var f5 = FileInfo{Name: "name5", Size: 5, Checksum: "checksum5"}
-	var f6 = FileInfo{Name: "name6", Size: 6, Checksum: "checksum6"}
+	var f1 = FileInfo{Name: "name1", Size: 1, Mode: 0644, ModTime: time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC)}
+	var f2 = FileInfo{Name: "name2", Size: 2, Mode: 0644, ModTime: time.Date(1999, 1, 2, 0, 0, 0, 0, time.UTC)}
+	var f3 = FileInfo{Name: "name3", Size: 3, Mode: 0644, ModTime: time.Date(1999, 1, 3, 0, 0, 0, 0, time.UTC)}
+	var f4 = FileInfo{Name: "name4", Size: 4, Mode: 0644, ModTime: time.Date(1999, 1, 4, 0, 0, 0, 0, time.UTC)}
+	var f5 = FileInfo{Name: "name5", Size: 5, Mode: 0644, ModTime: time.Date(1999, 1, 5, 0, 0, 0, 0, time.UTC)}
+	var f6 = FileInfo{Name: "name6", Size: 6, Mode: 0644, ModTime: time.Date(1999, 1, 6, 0, 0, 0, 0, time.UTC)}
 	var a, b = &Manifest{}, &Manifest{}
 
 	if !a.Equiv(b) {
@@ -58,7 +60,20 @@ func TestEquivalent(t *testing.T) {
 
 	a.Created = time.Now()
 	if !a.Equiv(b) {
-		t.Fatalf("Different create times shouldn't affect equivalence")
+		t.Fatalf("Different manifest create times shouldn't affect equivalence")
+	}
+
+	a.Files = []FileInfo{f1, f3}
+	b.Files = []FileInfo{f1, f3}
+	a.Files[0].Mode = 0755
+	if a.Equiv(b) {
+		t.Fatalf("Different file modes should mean differing manifests")
+	}
+
+	a.Files = []FileInfo{f1, f3}
+	b.Files[1].ModTime = time.Now()
+	if a.Equiv(b) {
+		t.Fatalf("Different file modtime should mean differing manifests")
 	}
 }
 
@@ -72,15 +87,21 @@ func _m(t *testing.T) *Manifest {
 	return New(testdata)
 }
 
-func _mkf(name string, size int64, checksum string) FileInfo {
-	return FileInfo{Name: name, Size: size, Checksum: checksum}
+func _mkf(name string, size int64, mode fs.FileMode) FileInfo {
+	var cwd, _ = os.Getwd()
+	var fullpath = filepath.Join(cwd, "testdata", name)
+	var info, err = os.Stat(fullpath)
+	if err != nil {
+		panic(fmt.Sprintf("Unable to read %q in _mkf: %s", fullpath, err))
+	}
+	return FileInfo{Name: name, Size: size, Mode: mode, ModTime: info.ModTime()}
 }
 
 // These are the file manifests for what's in the testdata dir
 var expectedFiles = []FileInfo{
-	_mkf("a.txt", 30, "df879070"),
-	_mkf("b.bin", 5000, "df3b5d6a"),
-	_mkf("c.null", 0, "00000000"),
+	_mkf("a.txt", 30, 0644),
+	_mkf("b.bin", 5000, 0644),
+	_mkf("c.null", 0, 0644),
 }
 
 func TestBuild(t *testing.T) {

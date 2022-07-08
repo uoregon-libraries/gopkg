@@ -10,7 +10,7 @@ import (
 )
 
 func usage(msg string) {
-	fmt.Fprintln(os.Stderr, "\033[31;1mError:\033[0m " + msg)
+	fmt.Fprintln(os.Stderr, "\033[31;1mError:\033[0m "+msg)
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintf(os.Stderr, "usage: %s <operation> <directory>...\n\n", os.Args[0])
 	fmt.Fprintln(os.Stderr, `Operation may be either "create" or "verify"`)

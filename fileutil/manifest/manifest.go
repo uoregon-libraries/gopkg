@@ -3,13 +3,12 @@ package manifest
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
-
-	"github.com/uoregon-libraries/gopkg/fileutil"
 )
 
 // Filename is the name used to store the Manifest JSON representation
@@ -17,9 +16,10 @@ const Filename = ".manifest"
 
 // FileInfo represents basic information for a single file within a Manifest
 type FileInfo struct {
-	Name     string
-	Size     int64
-	Checksum string
+	Name    string
+	Size    int64
+	Mode    fs.FileMode
+	ModTime time.Time
 }
 
 func newFileInfo(loc string, e os.DirEntry) (FileInfo, error) {
@@ -31,21 +31,23 @@ func newFileInfo(loc string, e os.DirEntry) (FileInfo, error) {
 	}
 
 	fd.Size = info.Size()
-	fd.Checksum, err = fileutil.CRC32(fullpath)
-	if err != nil {
-		return fd, fmt.Errorf("crc32 for %q: %w", fullpath, err)
-	}
+	fd.Mode = info.Mode()
+	fd.ModTime = info.ModTime()
 
 	return fd, nil
 }
 
-// A Manifest is a representation of a filesystem directory's state. It only
-// works with very simple directories: no subdirs, no special files, etc.
-// Hidden files are ignored from the Manifest.
+// A Manifest is a somewhat special-case representation of a filesystem
+// directory's state. It only works with very simple directories: no subdirs,
+// no special files, etc. Hidden files are ignored from the Manifest by design
+// to allow for the common cases without getting problems from things like a
+// .gitignore file for instance.
 //
 // The data stored can be useful to determine if a directory changes
-// purposefully: it uses a simple filesize and CRC-32 check for file contents
-// in order to be fast. It is *not* meant to be cryptographically secure.
+// purposefully: filesize, file modes (permissions) and file's modification
+// times. Additionally, the manifest stores its own creation time in order to
+// effectively know when a directory was first seen, even if the files are all
+// very old (this can happen when moving a directory).
 type Manifest struct {
 	path    string
 	Created time.Time
@@ -70,9 +72,9 @@ func (m *Manifest) Build() error {
 			return fmt.Errorf("reading dir %q: one or more entries are not a regular file", m.path)
 		}
 
-		// Skip the manifest as well as any hidden files - these have no bearing
-		// once issues move to NCA. We explicitly check for the manifest in case we
-		// change the constant string to not be hidden for some reason.
+		// Skip the manifest as well as any hidden files - we explicitly check for
+		// the manifest in case we change the constant string to not be hidden for
+		// some reason.
 		if entry.Name()[0] == '.' || entry.Name() == Filename {
 			continue
 		}
