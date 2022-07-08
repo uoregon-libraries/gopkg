@@ -1,4 +1,4 @@
-package fileutil
+package manifest
 
 import (
 	"os"
@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestManifestEquivalent(t *testing.T) {
+func TestEquivalent(t *testing.T) {
 	var f1 = FileInfo{Name: "name1", Size: 1, Checksum: "checksum1"}
 	var f2 = FileInfo{Name: "name2", Size: 2, Checksum: "checksum2"}
 	var f3 = FileInfo{Name: "name3", Size: 3, Checksum: "checksum3"}
@@ -69,7 +69,7 @@ func _m(t *testing.T) *Manifest {
 		return nil
 	}
 	var testdata = filepath.Join(cwd, "testdata")
-	return NewManifest(testdata)
+	return New(testdata)
 }
 
 func _mkf(name string, size int64, checksum string) FileInfo {
@@ -83,7 +83,7 @@ var expectedFiles = []FileInfo{
 	_mkf("c.null", 0, "00000000"),
 }
 
-func TestManifestBuild(t *testing.T) {
+func TestBuild(t *testing.T) {
 	var m = _m(t)
 	var err = m.Build()
 	if err != nil {
@@ -108,7 +108,7 @@ func TestManifestBuild(t *testing.T) {
 	}
 }
 
-func TestManifestWrite(t *testing.T) {
+func TestWrite(t *testing.T) {
 	var m = _m(t)
 	m.Build()
 	var err = m.Write()
@@ -117,7 +117,7 @@ func TestManifestWrite(t *testing.T) {
 	}
 }
 
-func TestManifestRead(t *testing.T) {
+func TestRead(t *testing.T) {
 	var corpus = _m(t)
 	corpus.Build()
 	corpus.Created = time.Time{}
@@ -151,7 +151,7 @@ func TestManifestRead(t *testing.T) {
 	}
 }
 
-func TestManifestChange(t *testing.T) {
+func TestChange(t *testing.T) {
 	var corpus = _m(t)
 	corpus.Build()
 	corpus.Write()

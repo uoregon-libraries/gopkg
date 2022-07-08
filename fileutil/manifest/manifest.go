@@ -1,4 +1,4 @@
-package fileutil
+package manifest
 
 import (
 	"encoding/json"
@@ -8,10 +8,12 @@ import (
 	"path/filepath"
 	"sort"
 	"time"
+
+	"github.com/uoregon-libraries/gopkg/fileutil"
 )
 
-// ManifestFilename is the name used to store the Manifest JSON representation
-const ManifestFilename = ".manifest"
+// Filename is the name used to store the Manifest JSON representation
+const Filename = ".manifest"
 
 // FileInfo represents basic information for a single file within a Manifest
 type FileInfo struct {
@@ -29,7 +31,7 @@ func newFileInfo(loc string, e os.DirEntry) (FileInfo, error) {
 	}
 
 	fd.Size = info.Size()
-	fd.Checksum, err = CRC32(fullpath)
+	fd.Checksum, err = fileutil.CRC32(fullpath)
 	if err != nil {
 		return fd, fmt.Errorf("crc32 for %q: %w", fullpath, err)
 	}
@@ -50,9 +52,9 @@ type Manifest struct {
 	Files   []FileInfo
 }
 
-// NewManifest returns a Manifest ready for scanning a directory or reading an
+// New returns a Manifest ready for scanning a directory or reading an
 // existing manifest file.
-func NewManifest(location string) *Manifest {
+func New(location string) *Manifest {
 	return &Manifest{path: location, Created: time.Now()}
 }
 
@@ -71,7 +73,7 @@ func (m *Manifest) Build() error {
 		// Skip the manifest as well as any hidden files - these have no bearing
 		// once issues move to NCA. We explicitly check for the manifest in case we
 		// change the constant string to not be hidden for some reason.
-		if entry.Name()[0] == '.' || entry.Name() == ManifestFilename {
+		if entry.Name()[0] == '.' || entry.Name() == Filename {
 			continue
 		}
 
@@ -101,7 +103,7 @@ func (m *Manifest) Read() error {
 }
 
 func (m *Manifest) filename() string {
-	return filepath.Join(m.path, ManifestFilename)
+	return filepath.Join(m.path, Filename)
 }
 
 // Write creates or replaces the manifest file with the current file metadata
