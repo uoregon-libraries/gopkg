@@ -64,7 +64,7 @@ func New(location string) *Manifest {
 func (m *Manifest) Build() error {
 	var entries, err = os.ReadDir(m.path)
 	if err != nil {
-		return fmt.Errorf("reading dir %q: %s", m.path, err)
+		return fmt.Errorf("reading dir %q: %w", m.path, err)
 	}
 
 	for _, entry := range entries {
@@ -81,7 +81,7 @@ func (m *Manifest) Build() error {
 
 		var fd, err = newFileInfo(m.path, entry)
 		if err != nil {
-			return fmt.Errorf("reading dir %q: %s", m.path, err)
+			return fmt.Errorf("reading dir %q: %w", m.path, err)
 		}
 		m.Files = append(m.Files, fd)
 	}
