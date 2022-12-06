@@ -172,6 +172,23 @@ func TestRead(t *testing.T) {
 	}
 }
 
+func TestFileInfoEqual(t *testing.T) {
+	var a = FileInfo{Name: "name", Size: 12345, Mode: 0644, ModTime: time.Now()}
+	var b = a
+
+	if !a.Equal(b) {
+		t.Fatalf("%#v should be equal to %#v", a, b)
+	}
+
+	b.ModTime = time.Unix(0, a.ModTime.UnixNano())
+	if a == b {
+		t.Fatalf("After hacking time to not have monotonic clock, a still equals b")
+	}
+	if !a.Equal(b) {
+		t.Fatalf("After hacking time to not have monotonic clock, a.Equal(b) should be true")
+	}
+}
+
 func TestChange(t *testing.T) {
 	var corpus = _m(t)
 	corpus.Build()
