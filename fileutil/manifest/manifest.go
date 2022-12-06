@@ -22,6 +22,13 @@ type FileInfo struct {
 	ModTime time.Time
 }
 
+// Equal returns true if all fields are *equivalent*. This means normal
+// equality checks for all but time, which needs to use time.Equal to handle
+// monotonic clocks and potentially different time zones.
+func (fi FileInfo) Equal(b FileInfo) bool {
+	return fi.Name == b.Name && fi.Size == b.Size && fi.Mode == b.Mode && fi.ModTime.Equal(b.ModTime)
+}
+
 func newFileInfo(loc string, e os.DirEntry) (FileInfo, error) {
 	var fullpath = filepath.Join(loc, e.Name())
 	var fd = FileInfo{Name: e.Name()}
@@ -134,10 +141,8 @@ func (m *Manifest) Equiv(m2 *Manifest) bool {
 	m2.sortFiles()
 
 	for i := range m.Files {
-		if m.Files[i].Name != m2.Files[i].Name ||
-			m.Files[i].Size != m2.Files[i].Size ||
-			m.Files[i].Mode != m2.Files[i].Mode ||
-			!m.Files[i].ModTime.Equal(m2.Files[i].ModTime) {
+		var f1, f2 = m.Files[i], m2.Files[i]
+		if !f1.Equal(f2) {
 			return false
 		}
 	}
