@@ -123,7 +123,9 @@ func (m *Manifest) sortFiles() {
 	})
 }
 
-// Equiv returns true if m and m2 have the *exact* same file lists
+// Equiv returns true if m and m2 have the *exact* same file lists.
+// Struct requires manual comparison as ModTime values must use Equal
+// to handle monotonic clock values. (Ref: https://pkg.go.dev/time)
 func (m *Manifest) Equiv(m2 *Manifest) bool {
 	if len(m.Files) != len(m2.Files) {
 		return false
@@ -132,7 +134,10 @@ func (m *Manifest) Equiv(m2 *Manifest) bool {
 	m2.sortFiles()
 
 	for i := range m.Files {
-		if m.Files[i] != m2.Files[i] {
+		if m.Files[i].Name != m2.Files[i].Name ||
+			m.Files[i].Size != m2.Files[i].Size ||
+			m.Files[i].Mode != m2.Files[i].Mode ||
+			!m.Files[i].ModTime.Equal(m2.Files[i].ModTime) {
 			return false
 		}
 	}
