@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/uoregon-libraries/gopkg/fileutil"
 )
@@ -56,8 +57,8 @@ func (b *Bag) WriteTagFiles() (err error) {
 }
 
 // GenerateChecksums iterates over all files in the data path and generates
-// each file's checksum in turn, storing the FileChecksums in b.Checksums. The
-// checksum path is always relative to the bag's root.
+// each file's checksum in turn, storing the FileChecksums in b.Checksums,
+// sorted by file path. The checksum path is always relative to the bag's root.
 //
 // If there are any errors, relevant error information is returned. b.Checksums
 // may be incomplete or incorrect in these cases, and should not be used.
@@ -96,6 +97,10 @@ func (b *Bag) GenerateChecksums() error {
 		}
 
 		return nil
+	})
+
+	sort.Slice(b.Checksums, func(i, j int) bool {
+		return b.Checksums[i].Path < b.Checksums[j].Path
 	})
 
 	return err
@@ -155,8 +160,8 @@ func (b *Bag) writeBagitFile() error {
 
 // GenerateTagSums iterates over all "tag" files (top-level files, not files in
 // data/) and generates each file's checksum in turn, storing them in
-// b.TagSums. Files matching "tagmanifest-*.txt" are skipped as tag manifests
-// themselves are not "tag" files.
+// b.TagSums, sorted by file path. Files matching "tagmanifest-*.txt" are
+// skipped as tag manifests themselves are not "tag" files.
 //
 // If there are any errors, relevant error information is returned. b.TagSums
 // may be incomplete or incorrect in these cases, and should not be used.
@@ -189,6 +194,10 @@ func (b *Bag) GenerateTagSums() error {
 		}
 		b.TagSums = append(b.TagSums, chksum)
 	}
+
+	sort.Slice(b.TagSums, func(i, j int) bool {
+		return b.TagSums[i].Path < b.TagSums[j].Path
+	})
 
 	return nil
 }

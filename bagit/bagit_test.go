@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sort"
 	"testing"
 
 	"github.com/uoregon-libraries/gopkg/assert"
@@ -21,12 +20,6 @@ func TestGenerateChecksums(t *testing.T) {
 	var b = New(path)
 	err = b.GenerateChecksums()
 	assert.NilError(err, fmt.Sprintf("generating checksums in %q", b.root), t)
-
-	// Sort the list for easier comparison - filepath.Walk should already do
-	// this, but I can't stand tests that stop passing just because of sorting
-	sort.Slice(b.Checksums, func(i, j int) bool {
-		return b.Checksums[i].Path < b.Checksums[j].Path
-	})
 
 	var expectedChecksums = []string{
 		"60fa80b948a0acc557a6ba7523f4040a7b452736723df20f118d0aacb5c1901b", // another.txt's "sha256sum" value
