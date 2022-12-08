@@ -3,6 +3,7 @@ package bagit
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 
@@ -10,16 +11,13 @@ import (
 )
 
 func TestGenerateChecksums(t *testing.T) {
-	var err error
-	var path string
-	var b *Bag
-
-	path, err = os.Getwd()
+	var wd, err = os.Getwd()
 	if err != nil {
 		panic(err)
 	}
 
-	b = New(path)
+	var path = filepath.Join(wd, "testdata")
+	var b = New(path)
 	err = b.GenerateChecksums()
 	assert.NilError(err, fmt.Sprintf("generating checksums in %q", b.root), t)
 
