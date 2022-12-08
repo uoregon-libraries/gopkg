@@ -31,7 +31,7 @@ func New(root string) *Bag {
 }
 
 // WriteTagFiles traverses all files under the bag's root/data, generates
-// hashes for each, and writes out "manifest-[hashtype].txt".  Upon completion,
+// hashes for each, and writes out "manifest-[hashtype].txt". Upon completion,
 // bagit.txt and tagmanifest-[hashtype].txt are then written.
 //
 // This is not parallelized as it seems unlikely any advantage would be gained
@@ -52,11 +52,11 @@ func (b *Bag) WriteTagFiles() (err error) {
 }
 
 // GenerateChecksums iterates over all files in the data path and generates
-// each file's checksum in turn, returning the resulting slice of
-// FileChecksums.  The checksum path is always relative to the bag's root.
+// each file's checksum in turn, storing the FileChecksums in b.Checksums. The
+// checksum path is always relative to the bag's root.
 //
-// If there are any errors, GenerateChecksums returns an empty slice along with
-// relevant error information.
+// If there are any errors, relevant error information is returned. b.Checksums
+// may be incomplete or incorrect in these cases, and should not be used.
 //
 // This is typically used internally to generate the manifest file, but can be
 // useful for testing, bag validation, or making use of the BagIt data
