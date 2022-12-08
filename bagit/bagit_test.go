@@ -77,3 +77,71 @@ e24a952af486ce42a2119d89bec8c7a8c42c2ae9e6302efce5833cf381775594  manifest-sha25
 		t.Fatalf("Expected %q to be %q, but got %q", fname, expected, raw)
 	}
 }
+
+func TestReadManifests(t *testing.T) {
+	var wd, err = os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	var path = filepath.Join(wd, "testdata")
+	os.Remove(filepath.Join(path, "manifest-sha256.txt"))
+	os.Remove(filepath.Join(path, "tagmanifest-sha256.txt"))
+	os.Remove(filepath.Join(path, "bagit.txt"))
+	var b = New(path)
+	err = b.WriteTagFiles()
+	if err != nil {
+		t.Fatalf("Error writing tag files: %s", err)
+	}
+
+	var b2 = New(path)
+	err = b2.ReadManifests()
+	if err != nil {
+		t.Fatalf("Error reading tag files: %s", err)
+	}
+
+	if len(b.Checksums) != len(b2.Checksums) {
+		t.Fatalf("b.Checksums: %d elements; b2.Checksums: %d elements", len(b.Checksums), len(b2.Checksums))
+	}
+	for i := range b.Checksums {
+		if *b.Checksums[i] != *b2.Checksums[i] {
+			t.Fatalf("b.Checksums[%d]: %#v; b2.Checksums[%d]: %#v", i, b.Checksums[i], i, b2.Checksums[i])
+		}
+	}
+
+	if len(b.TagSums) != len(b2.TagSums) {
+		t.Fatalf("b.TagSums: %d elements; b2.TagSums: %d elements", len(b.TagSums), len(b2.TagSums))
+	}
+	for i := range b.TagSums {
+		if *b.TagSums[i] != *b2.TagSums[i] {
+			t.Fatalf("b.TagSums[%d]: %#v; b2.TagSums[%d]: %#v", i, b.TagSums[i], i, b2.TagSums[i])
+		}
+	}
+
+	// It should be fine without a tag manifest; it just won't have that data
+	os.Remove(filepath.Join(path, "tagmanifest-sha256.txt"))
+	err = b2.ReadManifests()
+	if err != nil {
+		t.Fatalf("Lack of a tag manifest shouldn't get an error, but we got %s", err)
+	}
+
+	if len(b.Checksums) != len(b2.Checksums) {
+		t.Fatalf("b.Checksums: %d elements; b2.Checksums: %d elements", len(b.Checksums), len(b2.Checksums))
+	}
+	for i := range b.Checksums {
+		if *b.Checksums[i] != *b2.Checksums[i] {
+			t.Fatalf("b.Checksums[%d]: %#v; b2.Checksums[%d]: %#v", i, b.Checksums[i], i, b2.Checksums[i])
+		}
+	}
+
+	if len(b2.TagSums) != 0 {
+		t.Fatalf("TagSums should be empty")
+	}
+
+	// This should puke - manifest is required
+	os.Remove(filepath.Join(path, "manifest-sha256.txt"))
+	err = b2.ReadManifests()
+	if err == nil {
+		t.Fatalf("Lack of a manifest should get an error, but we didn't get one")
+	}
+}
