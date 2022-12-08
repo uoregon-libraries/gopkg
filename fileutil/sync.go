@@ -2,7 +2,9 @@ package fileutil
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // SyncDirectory syncs files from srcPath to dstPath, copying any which are
@@ -13,6 +15,13 @@ import (
 // - Basic permissions (file mode) will by preserved, though owner, group, ACLs, and other metadata will not
 // - Files in dstPath which are not in srcPath will not be removed
 func SyncDirectory(srcPath, dstPath string) error {
+	return SyncDirectoryExcluding(srcPath, dstPath, nil)
+}
+
+// SyncDirectoryExcluding syncs files from srcPath to dstPath excluding files
+// which match any of the given patterns. Other than the exclusions, this is
+// precisely the same as SyncDirectory.
+func SyncDirectoryExcluding(srcPath, dstPath string, exclusionPatterns []string) error {
 	var err error
 
 	srcPath, dstPath, err = getAbsPaths(srcPath, dstPath)
@@ -25,7 +34,25 @@ func SyncDirectory(srcPath, dstPath string) error {
 		return err
 	}
 
-	return copyRecursive(srcPath, dstPath, syncFile)
+	var copyFn = syncFile
+
+	if len(exclusionPatterns) > 0 {
+		copyFn = func(src, dst string) error {
+			for _, pattern := range exclusionPatterns {
+				var basename = filepath.Base(src)
+				var match, err = filepath.Match(pattern, basename)
+				if err != nil {
+					return fmt.Errorf("SyncDirectoryExcluding: invalid pattern %q", pattern)
+				}
+				if match {
+					return nil
+				}
+			}
+			return syncFile(src, dst)
+		}
+	}
+
+	return copyRecursive(srcPath, dstPath, copyFn)
 }
 
 // syncFile checks the two files to see if they differ, and copies src to dest
