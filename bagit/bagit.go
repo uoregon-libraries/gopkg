@@ -169,6 +169,7 @@ func (b *Bag) GenerateTagSums() error {
 		return fmt.Errorf("error reading bag root: %s", err)
 	}
 
+	b.TagSums = nil
 	for _, info := range infos {
 		if !info.Mode().IsRegular() {
 			continue
