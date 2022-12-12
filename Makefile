@@ -1,8 +1,11 @@
-.PHONY: all test
+.PHONY: default examples test
 
-all:
+default:
 	./validate.sh
 	go build github.com/uoregon-libraries/gopkg/...
+
+examples:
+	go build -o ./bin/bagit ./examples/bagit
 
 test:
 	go test ./...
