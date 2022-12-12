@@ -21,10 +21,12 @@ type FileChecksum struct {
 
 // Bag holds state for the generation of bag manifest and other tag files
 type Bag struct {
-	root      string
-	Hasher    *Hasher
-	Checksums []*FileChecksum
-	TagSums   []*FileChecksum
+	root              string
+	Hasher            *Hasher
+	ActualChecksums   []*FileChecksum // Checksums for everything in data/
+	ActualTagSums     []*FileChecksum // Checksums for all tag files
+	ManifestChecksums []*FileChecksum // Parsed checksum data from manifest-*.txt
+	ManifestTagSums   []*FileChecksum // Parsed checksum data from tagmanifest-*.txt
 }
 
 // New returns Bag structure for processing the given root path, and sets the
@@ -33,7 +35,7 @@ func New(root string) *Bag {
 	return &Bag{root: root, Hasher: HashSHA256}
 }
 
-func parseChecksums(fname string) ([]*FileChecksum, error) {
+func readSums(fname string) ([]*FileChecksum, error) {
 	var data, err = ioutil.ReadFile(fname)
 	if err != nil {
 		return nil, err
@@ -61,27 +63,28 @@ func parseChecksums(fname string) ([]*FileChecksum, error) {
 }
 
 // ReadManifests loads "manifest-[hashtype].txt" and, if present,
-// "tagmanifest-[hashtype].txt". Data is stored in the Checksums and TagSums
-// fields, respectively. It does *not* generate or validate files in the bag.
+// "tagmanifest-[hashtype].txt". Data is stored in the ManifestChecksums and
+// ManifestTagSums fields, respectively. It does *not* generate or validate
+// files in the bag.
 //
 // If an error occurs, it will be returned, and the bag's data may be in an
 // incomplete state and should not be relied upon.
 //
 // Like the Generate... functions, ReadManifests will sort checksum data by
-// filepath, allowing for easier comparisons.
+// filepath, allowing for predictable manual comparisons if necessary.
 func (b *Bag) ReadManifests() error {
 	var err error
-	b.Checksums = nil
-	b.TagSums = nil
+	b.ManifestChecksums = nil
+	b.ManifestTagSums = nil
 
 	// Manifest file must exist, so all errors are fatal
-	b.Checksums, err = parseChecksums(b.manifestFilename())
+	b.ManifestChecksums, err = readSums(b.manifestFilename())
 	if err != nil {
 		return fmt.Errorf("unable to read manifest file %q: %w", b.manifestFilename(), err)
 	}
 
 	// Tag manifest is optional, so we handle the nonexistence separately from other errors
-	b.TagSums, err = parseChecksums(b.tagManifestFilename())
+	b.ManifestTagSums, err = readSums(b.tagManifestFilename())
 	if os.IsNotExist(err) {
 		return nil
 	}
@@ -117,10 +120,11 @@ func (b *Bag) WriteTagFiles() (err error) {
 }
 
 // GenerateChecksums iterates over all files in the data path and generates
-// each file's checksum in turn, storing the FileChecksums in b.Checksums,
-// sorted by file path. The checksum path is always relative to the bag's root.
+// each file's checksum in turn, storing the FileChecksums in
+// b.ActualChecksums, sorted by file path. The checksum path is always relative
+// to the bag's root, which means it should always start with "data/".
 //
-// If there are any errors, relevant error information is returned. b.Checksums
+// If there are any errors, relevant error information is returned. b.ActualChecksums
 // may be incomplete or incorrect in these cases, and should not be used.
 //
 // This is typically used internally to generate the manifest file, but can be
@@ -138,10 +142,10 @@ func (b *Bag) GenerateChecksums() error {
 
 	var dataPath = filepath.Join(b.root, "data")
 	if !fileutil.IsDir(dataPath) {
-		return fmt.Errorf("%q is not a directory", dataPath)
+		return fmt.Errorf(`%q is not a bag: missing or invalid "data" directory`, b.root)
 	}
 
-	b.Checksums = nil
+	b.ActualChecksums = nil
 	err = filepath.Walk(dataPath, func(path string, info os.FileInfo, err error) error {
 		// Don't try to proceed if there's already an error!
 		if err != nil {
@@ -151,7 +155,7 @@ func (b *Bag) GenerateChecksums() error {
 		if info.Mode().IsRegular() {
 			var chksum, err = b.getsum(path)
 			if err == nil {
-				b.Checksums = append(b.Checksums, chksum)
+				b.ActualChecksums = append(b.ActualChecksums, chksum)
 			}
 			return err
 		}
@@ -159,8 +163,8 @@ func (b *Bag) GenerateChecksums() error {
 		return nil
 	})
 
-	sort.Slice(b.Checksums, func(i, j int) bool {
-		return b.Checksums[i].Path < b.Checksums[j].Path
+	sort.Slice(b.ActualChecksums, func(i, j int) bool {
+		return b.ActualChecksums[i].Path < b.ActualChecksums[j].Path
 	})
 
 	return err
@@ -208,7 +212,7 @@ func (b *Bag) writeManifest() error {
 	}
 
 	var f = fileutil.NewSafeFile(manifestFile)
-	for _, ck := range b.Checksums {
+	for _, ck := range b.ActualChecksums {
 		fmt.Fprintf(f, "%s  %s\n", ck.Checksum, ck.Path)
 	}
 
@@ -228,11 +232,12 @@ func (b *Bag) writeBagitFile() error {
 
 // GenerateTagSums iterates over all "tag" files (top-level files, not files in
 // data/) and generates each file's checksum in turn, storing them in
-// b.TagSums, sorted by file path. Files matching "tagmanifest-*.txt" are
+// b.ActualTagSums, sorted by file path. Files matching "tagmanifest-*.txt" are
 // skipped as tag manifests themselves are not "tag" files.
 //
-// If there are any errors, relevant error information is returned. b.TagSums
-// may be incomplete or incorrect in these cases, and should not be used.
+// If there are any errors, relevant error information is returned.
+// b.ActualTagSums may be incomplete or incorrect in these cases, and should
+// not be used.
 //
 // This is typically used internally to generate the tag manifest file, but can
 // be useful for testing or tag file validation.
@@ -242,7 +247,7 @@ func (b *Bag) GenerateTagSums() error {
 		return fmt.Errorf("error reading bag root: %s", err)
 	}
 
-	b.TagSums = nil
+	b.ActualTagSums = nil
 	for _, info := range infos {
 		if !info.Mode().IsRegular() {
 			continue
@@ -260,11 +265,11 @@ func (b *Bag) GenerateTagSums() error {
 		if err != nil {
 			return fmt.Errorf("error getting %q's checksum: %s", path, err)
 		}
-		b.TagSums = append(b.TagSums, chksum)
+		b.ActualTagSums = append(b.ActualTagSums, chksum)
 	}
 
-	sort.Slice(b.TagSums, func(i, j int) bool {
-		return b.TagSums[i].Path < b.TagSums[j].Path
+	sort.Slice(b.ActualTagSums, func(i, j int) bool {
+		return b.ActualTagSums[i].Path < b.ActualTagSums[j].Path
 	})
 
 	return nil
@@ -277,7 +282,7 @@ func (b *Bag) writeTagManifest() error {
 	}
 
 	var f = fileutil.NewSafeFile(manifestFile)
-	for _, ck := range b.TagSums {
+	for _, ck := range b.ActualTagSums {
 		fmt.Fprintf(f, "%s  %s\n", ck.Checksum, ck.Path)
 	}
 
@@ -287,4 +292,89 @@ func (b *Bag) writeTagManifest() error {
 	}
 
 	return nil
+}
+
+// Validate reads all manifest files (standard manifest plus the optional tag
+// manifest), generates fresh checksums, and compares what the manifest claims
+// we should have to what's actually on disk. The return will contain any
+// discrepancies in a human-readable format.
+//
+// If something fails, as opposed to there being incorrect data or manifests,
+// an error will be returned and discrepancies will be empty. This can happen
+// if there are no manifest files, if there is no "data" directory, if files
+// are unreadable, etc.
+//
+// If a tag manifest is present, it is validated first, and the rest of the bag
+// *is not validated* if the tag manifest has discrepancies. This avoids
+// unnecessary work when there are easily-identified top-level bag problems.
+func (b *Bag) Validate() (discrepancies []string, err error) {
+	err = b.ReadManifests()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(b.ManifestChecksums) == 0 {
+		return nil, fmt.Errorf("%s contains no data", b.manifestFilename())
+	}
+
+	if len(b.ManifestTagSums) > 0 {
+		err = b.GenerateTagSums()
+		if err != nil {
+			return nil, err
+		}
+
+		discrepancies = compare("tag manifest", b.ManifestTagSums, b.ActualTagSums)
+		if len(discrepancies) > 0 {
+			return discrepancies, nil
+		}
+	}
+
+	err = b.GenerateChecksums()
+	if err != nil {
+		return nil, err
+	}
+	discrepancies = compare("manifest", b.ManifestChecksums, b.ActualChecksums)
+
+	return discrepancies, nil
+}
+
+// compare validates a manifest file's checksums against the actual checksums
+// from the filesystem. The return will contain any discrepancies in a
+// human-readable format.
+func compare(manifestType string, manifest, actual []*FileChecksum) []string {
+	var manifestMap = mapify(manifest)
+	var actualMap = mapify(actual)
+	var errs []string
+
+	// Step 1: everything in the manifest should have a corresponding (and equal)
+	// item in the generated list
+	for path := range manifestMap {
+		var mchk, achk = manifestMap[path], actualMap[path]
+		if achk == "" {
+			errs = append(errs, fmt.Sprintf("missing file: %q (%s lists the file, but it is not present on disk)", path, manifestType))
+		} else if achk != mchk {
+			errs = append(errs, fmt.Sprintf("corrupt file: %q (%s checksum was %q, actual checksum was %q", path, manifestType, mchk, achk))
+		}
+	}
+
+	// Step 2: check for anything on the filesystem that wasn't in the manifest
+	// at all; we do not re-validate items that are in both lists here
+	for path := range actualMap {
+		if manifestMap[path] == "" {
+			errs = append(errs, fmt.Sprintf("extra file: %q (%s does not list the file, but it is present on disk)", path, manifestType))
+		}
+	}
+
+	return errs
+}
+
+// mapify turns a checksum slice into a map of path-to-checksum data to allow
+// for easier comparing of two checksum lists
+func mapify(src []*FileChecksum) map[string]string {
+	var m = make(map[string]string, len(src))
+	for _, chksum := range src {
+		m[chksum.Path] = chksum.Checksum
+	}
+
+	return m
 }
