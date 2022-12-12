@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/uoregon-libraries/gopkg/fileutil"
 )
@@ -22,6 +24,7 @@ type Bag struct {
 	root      string
 	Hasher    *Hasher
 	Checksums []*FileChecksum
+	TagSums   []*FileChecksum
 }
 
 // New returns Bag structure for processing the given root path, and sets the
@@ -30,8 +33,67 @@ func New(root string) *Bag {
 	return &Bag{root: root, Hasher: HashSHA256}
 }
 
+func parseChecksums(fname string) ([]*FileChecksum, error) {
+	var data, err = ioutil.ReadFile(fname)
+	if err != nil {
+		return nil, err
+	}
+
+	var sums []*FileChecksum
+	for _, line := range strings.Split(string(data), "\n") {
+		// Blank lines are allowed, but skipped
+		if line == "" {
+			continue
+		}
+
+		var parts = strings.Fields(line)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid manifest line in %q: %q", fname, line)
+		}
+		sums = append(sums, &FileChecksum{Checksum: parts[0], Path: parts[1]})
+	}
+
+	sort.Slice(sums, func(i, j int) bool {
+		return sums[i].Path < sums[j].Path
+	})
+
+	return sums, nil
+}
+
+// ReadManifests loads "manifest-[hashtype].txt" and, if present,
+// "tagmanifest-[hashtype].txt". Data is stored in the Checksums and TagSums
+// fields, respectively. It does *not* generate or validate files in the bag.
+//
+// If an error occurs, it will be returned, and the bag's data may be in an
+// incomplete state and should not be relied upon.
+//
+// Like the Generate... functions, ReadManifests will sort checksum data by
+// filepath, allowing for easier comparisons.
+func (b *Bag) ReadManifests() error {
+	var err error
+	b.Checksums = nil
+	b.TagSums = nil
+
+	// Manifest file must exist, so all errors are fatal
+	b.Checksums, err = parseChecksums(b.manifestFilename())
+	if err != nil {
+		return fmt.Errorf("unable to read manifest file %q: %w", b.manifestFilename(), err)
+	}
+
+	// Tag manifest is optional, so we handle the nonexistence separately from other errors
+	b.TagSums, err = parseChecksums(b.tagManifestFilename())
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("unable to read manifest file %q: %w", b.tagManifestFilename(), err)
+	}
+
+	return nil
+}
+
 // WriteTagFiles traverses all files under the bag's root/data, generates
-// hashes for each, and writes out "manifest-[hashtype].txt".  Upon completion,
+// hashes for each, and writes out "manifest-[hashtype].txt". Upon completion,
 // bagit.txt and tagmanifest-[hashtype].txt are then written.
 //
 // This is not parallelized as it seems unlikely any advantage would be gained
@@ -45,6 +107,9 @@ func (b *Bag) WriteTagFiles() (err error) {
 		err = b.writeBagitFile()
 	}
 	if err == nil {
+		err = b.GenerateTagSums()
+	}
+	if err == nil {
 		err = b.writeTagManifest()
 	}
 
@@ -52,11 +117,11 @@ func (b *Bag) WriteTagFiles() (err error) {
 }
 
 // GenerateChecksums iterates over all files in the data path and generates
-// each file's checksum in turn, returning the resulting slice of
-// FileChecksums.  The checksum path is always relative to the bag's root.
+// each file's checksum in turn, storing the FileChecksums in b.Checksums,
+// sorted by file path. The checksum path is always relative to the bag's root.
 //
-// If there are any errors, GenerateChecksums returns an empty slice along with
-// relevant error information.
+// If there are any errors, relevant error information is returned. b.Checksums
+// may be incomplete or incorrect in these cases, and should not be used.
 //
 // This is typically used internally to generate the manifest file, but can be
 // useful for testing, bag validation, or making use of the BagIt data
@@ -94,6 +159,10 @@ func (b *Bag) GenerateChecksums() error {
 		return nil
 	})
 
+	sort.Slice(b.Checksums, func(i, j int) bool {
+		return b.Checksums[i].Path < b.Checksums[j].Path
+	})
+
 	return err
 }
 
@@ -124,8 +193,16 @@ func (b *Bag) getsum(path string) (*FileChecksum, error) {
 	return &FileChecksum{Path: relPath, Checksum: hexSum}, nil
 }
 
+func (b *Bag) manifestFilename() string {
+	return filepath.Join(b.root, "manifest-"+b.Hasher.Name+".txt")
+}
+
+func (b *Bag) tagManifestFilename() string {
+	return filepath.Join(b.root, "tagmanifest-"+b.Hasher.Name+".txt")
+}
+
 func (b *Bag) writeManifest() error {
-	var manifestFile = filepath.Join(b.root, "manifest-"+b.Hasher.Name+".txt")
+	var manifestFile = b.manifestFilename()
 	if !fileutil.MustNotExist(manifestFile) {
 		return fmt.Errorf("manifest file %q must not exist", manifestFile)
 	}
@@ -149,32 +226,65 @@ func (b *Bag) writeBagitFile() error {
 	return f.Close()
 }
 
-func (b *Bag) writeTagManifest() error {
-	// Technically all files at the bag root are considered tag files, as a bag
-	// can have custom tag files, so we iterate all files at that top level
+// GenerateTagSums iterates over all "tag" files (top-level files, not files in
+// data/) and generates each file's checksum in turn, storing them in
+// b.TagSums, sorted by file path. Files matching "tagmanifest-*.txt" are
+// skipped as tag manifests themselves are not "tag" files.
+//
+// If there are any errors, relevant error information is returned. b.TagSums
+// may be incomplete or incorrect in these cases, and should not be used.
+//
+// This is typically used internally to generate the tag manifest file, but can
+// be useful for testing or tag file validation.
+func (b *Bag) GenerateTagSums() error {
 	var infos, err = ioutil.ReadDir(b.root)
 	if err != nil {
 		return fmt.Errorf("error reading bag root: %s", err)
 	}
 
-	var f = fileutil.NewSafeFile(filepath.Join(b.root, "tagmanifest-"+b.Hasher.Name+".txt"))
+	b.TagSums = nil
 	for _, info := range infos {
-		if info.Mode().IsRegular() {
-			var path = filepath.Join(b.root, info.Name())
-			var chksum, err = b.getsum(path)
-			if err != nil {
-				f.Cancel()
-				return fmt.Errorf("error getting %q's checksum: %s", path, err)
-			}
-
-			_, err = fmt.Fprintf(f, "%s  %s\n", chksum.Checksum, info.Name())
-			if err != nil {
-				f.Cancel()
-				return fmt.Errorf("error writing checksum: %s", err)
-			}
+		if !info.Mode().IsRegular() {
+			continue
 		}
+
+		var path = filepath.Join(b.root, info.Name())
+		// Explicitly ignore the error here - if this pattern is broken, the caller
+		// has no way to fix it in any case. Better to just keep moving on.
+		var match, _ = filepath.Match("tagmanifest-*.txt", info.Name())
+		if match {
+			continue
+		}
+
+		var chksum, err = b.getsum(path)
+		if err != nil {
+			return fmt.Errorf("error getting %q's checksum: %s", path, err)
+		}
+		b.TagSums = append(b.TagSums, chksum)
 	}
 
-	f.Close()
+	sort.Slice(b.TagSums, func(i, j int) bool {
+		return b.TagSums[i].Path < b.TagSums[j].Path
+	})
+
+	return nil
+}
+
+func (b *Bag) writeTagManifest() error {
+	var manifestFile = b.tagManifestFilename()
+	if !fileutil.MustNotExist(manifestFile) {
+		return fmt.Errorf("tag manifest file %q must not exist", manifestFile)
+	}
+
+	var f = fileutil.NewSafeFile(manifestFile)
+	for _, ck := range b.TagSums {
+		fmt.Fprintf(f, "%s  %s\n", ck.Checksum, ck.Path)
+	}
+
+	var err = f.Close()
+	if err != nil {
+		return fmt.Errorf("error writing tag manifest file: %s", err)
+	}
+
 	return nil
 }
