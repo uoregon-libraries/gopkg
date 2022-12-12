@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/uoregon-libraries/gopkg/assert"
@@ -26,9 +27,9 @@ func TestGenerateChecksums(t *testing.T) {
 		"55f8718109829bf506b09d8af615b9f107a266e19f7a311039d1035f180b22d4", // test.txt's "sha256sum" value
 	}
 
-	assert.Equal(len(expectedChecksums), len(b.Checksums), "checksum list length", t)
+	assert.Equal(len(expectedChecksums), len(b.ActualChecksums), "checksum list length", t)
 
-	for i, ck := range b.Checksums {
+	for i, ck := range b.ActualChecksums {
 		assert.Equal(expectedChecksums[i], ck.Checksum, "checksum for "+ck.Path, t)
 	}
 }
@@ -78,7 +79,7 @@ e24a952af486ce42a2119d89bec8c7a8c42c2ae9e6302efce5833cf381775594  manifest-sha25
 	}
 }
 
-func TestReadManifests(t *testing.T) {
+func TestValidate(t *testing.T) {
 	var wd, err = os.Getwd()
 	if err != nil {
 		panic(err)
@@ -95,52 +96,35 @@ func TestReadManifests(t *testing.T) {
 	}
 
 	var b2 = New(path)
-	err = b2.ReadManifests()
+	var discrepancies []string
+	discrepancies, err = b2.Validate()
 	if err != nil {
-		t.Fatalf("Error reading tag files: %s", err)
+		t.Fatalf("Unable to validate: %s", err)
 	}
-
-	if len(b.Checksums) != len(b2.Checksums) {
-		t.Fatalf("b.Checksums: %d elements; b2.Checksums: %d elements", len(b.Checksums), len(b2.Checksums))
+	if len(b2.ManifestTagSums) == 0 {
+		t.Fatalf("TagSums should not be empty")
 	}
-	for i := range b.Checksums {
-		if *b.Checksums[i] != *b2.Checksums[i] {
-			t.Fatalf("b.Checksums[%d]: %#v; b2.Checksums[%d]: %#v", i, b.Checksums[i], i, b2.Checksums[i])
-		}
-	}
-
-	if len(b.TagSums) != len(b2.TagSums) {
-		t.Fatalf("b.TagSums: %d elements; b2.TagSums: %d elements", len(b.TagSums), len(b2.TagSums))
-	}
-	for i := range b.TagSums {
-		if *b.TagSums[i] != *b2.TagSums[i] {
-			t.Fatalf("b.TagSums[%d]: %#v; b2.TagSums[%d]: %#v", i, b.TagSums[i], i, b2.TagSums[i])
-		}
+	if len(discrepancies) > 0 {
+		t.Fatalf("Validation failed: %s", strings.Join(discrepancies, ", "))
 	}
 
 	// It should be fine without a tag manifest; it just won't have that data
 	os.Remove(filepath.Join(path, "tagmanifest-sha256.txt"))
-	err = b2.ReadManifests()
+	b2 = New(path)
+	discrepancies, err = b2.Validate()
 	if err != nil {
-		t.Fatalf("Lack of a tag manifest shouldn't get an error, but we got %s", err)
+		t.Fatalf("Unable to validate: %s", err)
 	}
-
-	if len(b.Checksums) != len(b2.Checksums) {
-		t.Fatalf("b.Checksums: %d elements; b2.Checksums: %d elements", len(b.Checksums), len(b2.Checksums))
-	}
-	for i := range b.Checksums {
-		if *b.Checksums[i] != *b2.Checksums[i] {
-			t.Fatalf("b.Checksums[%d]: %#v; b2.Checksums[%d]: %#v", i, b.Checksums[i], i, b2.Checksums[i])
-		}
-	}
-
-	if len(b2.TagSums) != 0 {
+	if len(b2.ManifestTagSums) != 0 {
 		t.Fatalf("TagSums should be empty")
+	}
+	if len(discrepancies) > 0 {
+		t.Fatalf("Validation failed: %s", strings.Join(discrepancies, ", "))
 	}
 
 	// This should puke - manifest is required
 	os.Remove(filepath.Join(path, "manifest-sha256.txt"))
-	err = b2.ReadManifests()
+	_, err = b2.Validate()
 	if err == nil {
 		t.Fatalf("Lack of a manifest should get an error, but we didn't get one")
 	}
