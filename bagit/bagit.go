@@ -323,7 +323,7 @@ func (b *Bag) Validate() (discrepancies []string, err error) {
 			return nil, err
 		}
 
-		discrepancies = compare("tag manifest", b.ManifestTagSums, b.ActualTagSums)
+		discrepancies = Compare("tag manifest", b.ManifestTagSums, b.ActualTagSums)
 		if len(discrepancies) > 0 {
 			return discrepancies, nil
 		}
@@ -333,15 +333,23 @@ func (b *Bag) Validate() (discrepancies []string, err error) {
 	if err != nil {
 		return nil, err
 	}
-	discrepancies = compare("manifest", b.ManifestChecksums, b.ActualChecksums)
+	discrepancies = Compare("manifest", b.ManifestChecksums, b.ActualChecksums)
 
 	return discrepancies, nil
 }
 
-// compare validates a manifest file's checksums against the actual checksums
+// Compare validates a manifest file's checksums against the actual checksums
 // from the filesystem. The return will contain any discrepancies in a
 // human-readable format.
-func compare(manifestType string, manifest, actual []*FileChecksum) []string {
+//
+// This is normally not meant to be used externally, but it can be handy to
+// validate two separate bags or do a simple compare just of tag manifests or
+// something.
+//
+// manifestType should describe the kind of manifest - internally we only use
+// "tag manifest" and "manifest". This string is used when reporting
+// discrepancies, e.g.: "tag manifest lists the file, but blah blah blah".
+func Compare(manifestType string, manifest, actual []*FileChecksum) []string {
 	var manifestMap = mapify(manifest)
 	var actualMap = mapify(actual)
 	var errs []string
