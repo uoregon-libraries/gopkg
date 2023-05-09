@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // SyncDirectory syncs files from srcPath to dstPath, copying any which are
@@ -34,7 +35,10 @@ func SyncDirectoryExcluding(srcPath, dstPath string, exclusionPatterns []string)
 		return err
 	}
 
-	var copyFn = syncFile
+	var tolerance = 5
+	var copyFn = func(src, dst string) error {
+		return syncFileTolerant(src, dst, tolerance)
+	}
 
 	if len(exclusionPatterns) > 0 {
 		copyFn = func(src, dst string) error {
@@ -48,18 +52,38 @@ func SyncDirectoryExcluding(srcPath, dstPath string, exclusionPatterns []string)
 					return nil
 				}
 			}
-			return syncFile(src, dst)
+			return syncFileTolerant(src, dst, tolerance)
 		}
 	}
 
 	return copyRecursive(srcPath, dstPath, copyFn)
 }
 
-// syncFile checks the two files to see if they differ, and copies src to dest
+// syncFileTolerant calls syncFile up to n times, returning the last error if
+// retries are exceeded. Each error forces a short delay to allow for very
+// brief I/O "hiccups".
+func syncFileTolerant(src, dst string, tolerance int) error {
+	var err error
+	for i := 0; i < tolerance; i++ {
+		err = syncOneFile(src, dst)
+		if err == nil {
+			return nil
+		}
+		var delay = 1 << i
+		if delay > 60 {
+			delay = 60
+		}
+		time.Sleep(time.Second * time.Duration(delay))
+	}
+
+	return err
+}
+
+// syncOneFile checks the two files to see if they differ, and copies src to dest
 // if so.  Files are considered different if (a) dst doesn't exist, (b) dst
 // isn't the same size as src, or (c) dst doesn't have the same SHA256 sum as
 // src.
-func syncFile(src, dst string) error {
+func syncOneFile(src, dst string) error {
 	var doCopy, err = needSync(src, dst)
 	if err != nil {
 		return err
