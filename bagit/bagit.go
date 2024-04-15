@@ -2,7 +2,6 @@ package bagit
 
 import (
 	"fmt"
-	"hash"
 	"io"
 	"io/ioutil"
 	"os"
@@ -23,6 +22,7 @@ type FileChecksum struct {
 type Bag struct {
 	root              string
 	Hasher            *Hasher
+	Cache             Cacher
 	ActualChecksums   []*FileChecksum // Checksums for everything in data/
 	ActualTagSums     []*FileChecksum // Checksums for all tag files
 	ManifestChecksums []*FileChecksum // Parsed checksum data from manifest-*.txt
@@ -32,7 +32,11 @@ type Bag struct {
 // New returns Bag structure for processing the given root path, and sets the
 // hasher to the built-in SHA256
 func New(root string) *Bag {
-	return &Bag{root: root, Hasher: HashSHA256}
+	return &Bag{
+		root:   root,
+		Hasher: HashSHA256,
+		Cache:  noopCache{},
+	}
 }
 
 func readSums(fname string) ([]*FileChecksum, error) {
@@ -171,30 +175,37 @@ func (b *Bag) GenerateChecksums() error {
 }
 
 func (b *Bag) getsum(path string) (*FileChecksum, error) {
-	var err error
-	var f *os.File
-	var relPath, hexSum string
-	var h hash.Hash
-
-	f, err = os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("cannot open %q: %s", path, err)
-	}
-	defer f.Close()
-
-	h = b.Hasher.Hash()
-	_, err = io.Copy(h, f)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read %q for hashing: %s", path, err)
-	}
-
-	relPath, err = filepath.Rel(b.root, path)
+	var relPath, err = filepath.Rel(b.root, path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse %q's relative file path: %s", path, err)
 	}
 
-	hexSum = fmt.Sprintf("%x", h.Sum(nil))
-	return &FileChecksum{Path: relPath, Checksum: hexSum}, nil
+	var sum, exists = b.Cache.GetSum(relPath)
+	if !exists {
+		sum, err = b.compute(path)
+		if err != nil {
+			return nil, err
+		}
+	}
+	b.Cache.SetSum(path, sum)
+
+	return &FileChecksum{Path: relPath, Checksum: sum}, nil
+}
+
+func (b *Bag) compute(path string) (string, error) {
+	var f, err = os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("cannot open %q: %s", path, err)
+	}
+	defer f.Close()
+
+	var h = b.Hasher.Hash()
+	_, err = io.Copy(h, f)
+	if err != nil {
+		return "", fmt.Errorf("cannot read %q for hashing: %s", path, err)
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
 func (b *Bag) manifestFilename() string {
