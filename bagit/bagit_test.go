@@ -129,3 +129,40 @@ func TestValidate(t *testing.T) {
 		t.Fatalf("Lack of a manifest should get an error, but we didn't get one")
 	}
 }
+
+type testCache struct{}
+
+func (tc *testCache) GetSum(path string) (string, bool) {
+	if path == "data/another.txt" {
+		return "foo bar baz quux", true
+	}
+	return "", false
+}
+
+func (tc *testCache) SetSum(_, _ string) {
+}
+
+func TestGenerateChecksumsWithCache(t *testing.T) {
+	var wd, err = os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	var path = filepath.Join(wd, "testdata")
+	var b = New(path)
+	b.Cache = &testCache{}
+
+	err = b.GenerateChecksums()
+	assert.NilError(err, fmt.Sprintf("generating checksums in %q", b.root), t)
+
+	var expectedChecksums = []string{
+		"foo bar baz quux", // another.txt's fake-cached checksum
+		"55f8718109829bf506b09d8af615b9f107a266e19f7a311039d1035f180b22d4", // test.txt's actual value
+	}
+
+	assert.Equal(len(expectedChecksums), len(b.ActualChecksums), "checksum list length", t)
+
+	for i, ck := range b.ActualChecksums {
+		assert.Equal(expectedChecksums[i], ck.Checksum, "checksum for "+ck.Path, t)
+	}
+}
