@@ -3,7 +3,7 @@ package manifest
 import (
 	"encoding/json"
 	"fmt"
-	"io/fs"
+	"hash"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -25,10 +25,16 @@ const Filename = ".manifest"
 // times. Additionally, the manifest stores its own creation time in order to
 // effectively know when a directory was first seen, even if the files are all
 // very old (this can happen when moving a directory).
+//
+// Hash defaults to be unset, and in that state is unused. If manually set when
+// building, a hash is stored along with the rest of the metadata. If a
+// manifest is created to read a file that has hash data, but the caller does
+// not specify a Hash, validation will ignore hashed file info.
 type Manifest struct {
 	path    string
 	Created time.Time
 	Files   []FileInfo
+	Hash    hash.Hash `json:"-"`
 }
 
 // New returns a Manifest ready for scanning a directory or reading an
@@ -56,7 +62,7 @@ func (m *Manifest) Build() error {
 			continue
 		}
 
-		var fd, err = newFileInfo(m.path, entry)
+		var fd, err = newFileInfo(m.path, entry, m.Hash)
 		if err != nil {
 			return fmt.Errorf("reading dir %q: %w", m.path, err)
 		}

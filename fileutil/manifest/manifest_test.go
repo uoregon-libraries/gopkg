@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io/fs"
 	"os"
@@ -212,5 +213,72 @@ func TestChange(t *testing.T) {
 	post.Build()
 	if corpus.Equiv(post) {
 		t.Fatalf("Post-create, manifests should differ")
+	}
+}
+
+func TestManifestWithHash(t *testing.T) {
+	var m = _m(t)
+	m.Hash = sha256.New()
+
+	var err = m.Build()
+	if err != nil {
+		t.Fatalf("Unable to build manifest with hash: %s", err)
+	}
+
+	for _, f := range m.Files {
+		t.Logf("%q: %s", f.Name, f.Sum)
+		if f.Sum == "" {
+			t.Errorf("Expected file %q to have a non-empty sum", f.Name)
+		}
+	}
+
+	// Check hashes with output from sha256sum
+	var sums = map[string]string{
+		"a.txt":  "6d9edf0206a454f22d168dc5ca1e2ce422d0bed2fd0fa5f7092ea720900eb4ae",
+		"b.bin":  "0ddc84e6ee1159d24fa9223df52fa5c1dd15593217c2fcf53e48fa0b334f84b8",
+		"c.null": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+	}
+	for _, f := range m.Files {
+		var expected, exist = sums[f.Name]
+		if !exist {
+			t.Errorf("Unexpected file found in testdata: %q", f.Name)
+		}
+		var got = f.Sum
+		if got != expected {
+			t.Errorf("Expected %q to have sum %q, but got %q", f.Name, expected, got)
+		}
+	}
+}
+
+func TestValidateOneSidedHash(t *testing.T) {
+	// Create a new manifest with a hash function and build it
+	var m = _m(t)
+	m.Hash = sha256.New()
+
+	var err = m.Build()
+	if err != nil {
+		t.Fatalf("Unable to build manifest with hash: %s", err)
+	}
+
+	// Set a bogus hash value so we know it will fail if both manifests are set
+	// to use a checksum
+	m.Files[1].Sum = "foobar"
+
+	// Build manifest 2 - no checksum
+	var m2 = _m(t)
+	err = m2.Build()
+	if err != nil {
+		t.Fatalf("Unable to build manifest: %s", err)
+	}
+
+	// Verify that the manifests are equivalent
+	if !m.Equiv(m2) {
+		t.Errorf("Manifests should be equivalent when hashing isn't set for one")
+	}
+
+	// Give m2 a bogus sum and verify that manifests are not equivalent
+	m2.Files[2].Sum = "foobar 2"
+	if m.Equiv(m2) {
+		t.Errorf("Manifests shouldn't be equivalent when hashing is on for both")
 	}
 }
