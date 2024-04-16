@@ -29,12 +29,15 @@ type Bag struct {
 	ManifestTagSums   []*FileChecksum // Parsed checksum data from tagmanifest-*.txt
 }
 
-// New returns Bag structure for processing the given root path, and sets the
-// hasher to the built-in SHA256
-func New(root string) *Bag {
+// New returns Bag structure for processing the given root path. The passed-in
+// hasher must implement bagit.Hasher, but is most easily specified via
+// bagit.LookupHasher. e.g.:
+//
+//	var b = bagit.New("/path/to/bag", bagit.LookupHasher(bagit.HashMD5))
+func New(root string, hasher *Hasher) *Bag {
 	return &Bag{
 		root:   root,
-		Hasher: HashSHA256,
+		Hasher: hasher,
 		Cache:  noopCache{},
 	}
 }

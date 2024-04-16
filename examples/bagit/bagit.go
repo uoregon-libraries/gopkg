@@ -38,13 +38,13 @@ func main() {
 	var hasher *bagit.Hasher
 	switch algo {
 	case "md5":
-		hasher = bagit.HashMD5
+		hasher = bagit.Hash(bagit.MD5)
 	case "sha1":
-		hasher = bagit.HashSHA1
+		hasher = bagit.Hash(bagit.SHA1)
 	case "sha256":
-		hasher = bagit.HashSHA256
+		hasher = bagit.Hash(bagit.SHA256)
 	case "sha512":
-		hasher = bagit.HashSHA512
+		hasher = bagit.Hash(bagit.SHA512)
 	default:
 		usage("invalid algorithm: " + algo)
 	}
@@ -62,8 +62,7 @@ func main() {
 }
 
 func write(path string, hasher *bagit.Hasher) {
-	var b = bagit.New(path)
-	b.Hasher = hasher
+	var b = bagit.New(path, hasher)
 	var err = b.WriteTagFiles()
 	if err != nil {
 		perrf("Error generating tag files for %q: %s", path, err)
@@ -71,8 +70,7 @@ func write(path string, hasher *bagit.Hasher) {
 }
 
 func validate(path string, hasher *bagit.Hasher) {
-	var b = bagit.New(path)
-	b.Hasher = hasher
+	var b = bagit.New(path, hasher)
 	var discrepancies, err = b.Validate()
 	if err != nil {
 		perrf("Error trying to validate %q: %s", path, err)

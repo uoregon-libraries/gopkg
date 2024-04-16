@@ -18,7 +18,7 @@ func TestGenerateChecksums(t *testing.T) {
 	}
 
 	var path = filepath.Join(wd, "testdata")
-	var b = New(path)
+	var b = New(path, Hash(SHA256))
 	err = b.GenerateChecksums()
 	assert.NilError(err, fmt.Sprintf("generating checksums in %q", b.root), t)
 
@@ -44,7 +44,7 @@ func TestWriteTagFiles(t *testing.T) {
 	os.Remove(filepath.Join(path, "manifest-sha256.txt"))
 	os.Remove(filepath.Join(path, "tagmanifest-sha256.txt"))
 	os.Remove(filepath.Join(path, "bagit.txt"))
-	var b = New(path)
+	var b = New(path, Hash(SHA256))
 	err = b.WriteTagFiles()
 	if err != nil {
 		t.Fatalf("error generating checksums in %q: %s", b.root, err)
@@ -89,13 +89,13 @@ func TestValidate(t *testing.T) {
 	os.Remove(filepath.Join(path, "manifest-sha256.txt"))
 	os.Remove(filepath.Join(path, "tagmanifest-sha256.txt"))
 	os.Remove(filepath.Join(path, "bagit.txt"))
-	var b = New(path)
+	var b = New(path, Hash(SHA256))
 	err = b.WriteTagFiles()
 	if err != nil {
 		t.Fatalf("Error writing tag files: %s", err)
 	}
 
-	var b2 = New(path)
+	var b2 = New(path, Hash(SHA256))
 	var discrepancies []string
 	discrepancies, err = b2.Validate()
 	if err != nil {
@@ -110,7 +110,7 @@ func TestValidate(t *testing.T) {
 
 	// It should be fine without a tag manifest; it just won't have that data
 	os.Remove(filepath.Join(path, "tagmanifest-sha256.txt"))
-	b2 = New(path)
+	b2 = New(path, Hash(SHA256))
 	discrepancies, err = b2.Validate()
 	if err != nil {
 		t.Fatalf("Unable to validate: %s", err)
@@ -149,7 +149,7 @@ func TestGenerateChecksumsWithCache(t *testing.T) {
 	}
 
 	var path = filepath.Join(wd, "testdata")
-	var b = New(path)
+	var b = New(path, Hash(SHA256))
 	b.Cache = &testCache{}
 
 	err = b.GenerateChecksums()

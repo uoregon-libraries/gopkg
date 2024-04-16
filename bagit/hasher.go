@@ -14,10 +14,26 @@ type Hasher struct {
 	Name string
 }
 
-// Convenience hasher variables for setting up tag-file hashing
-var (
-	HashMD5    = &Hasher{md5.New, "md5"}
-	HashSHA1   = &Hasher{sha1.New, "sha1"}
-	HashSHA256 = &Hasher{sha256.New, "sha256"}
-	HashSHA512 = &Hasher{sha512.New, "sha512"}
+// HashName is an enum-like int for simplifying bag hasher lookups
+type HashName int
+
+// Built-in hash lookup names
+const (
+	MD5 HashName = iota
+	SHA1
+	SHA256
+	SHA512
 )
+
+var hasherLookup = map[HashName]*Hasher{
+	MD5:    &Hasher{md5.New, "md5"},
+	SHA1:   &Hasher{sha1.New, "sha1"},
+	SHA256: &Hasher{sha256.New, "sha256"},
+	SHA512: &Hasher{sha512.New, "sha512"},
+}
+
+// Hash returns a known Hasher for the given name. A nil hasher will be
+// returned if the name is unknown.
+func Hash(name HashName) *Hasher {
+	return hasherLookup[name]
+}
