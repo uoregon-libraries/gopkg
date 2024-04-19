@@ -2,7 +2,6 @@ package bagit
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/uoregon-libraries/gopkg/fileutil"
+	"github.com/uoregon-libraries/gopkg/hasher"
 )
 
 // FileChecksum holds a path to a file and its checksum
@@ -21,7 +21,7 @@ type FileChecksum struct {
 // Bag holds state for the generation of bag manifest and other tag files
 type Bag struct {
 	root              string
-	Hasher            *Hasher
+	Hasher            *hasher.Hasher
 	Cache             Cacher
 	ActualChecksums   []*FileChecksum // Checksums for everything in data/
 	ActualTagSums     []*FileChecksum // Checksums for all tag files
@@ -29,15 +29,12 @@ type Bag struct {
 	ManifestTagSums   []*FileChecksum // Parsed checksum data from tagmanifest-*.txt
 }
 
-// New returns Bag structure for processing the given root path. The passed-in
-// hasher must implement bagit.Hasher, but is most easily specified via
-// bagit.LookupHasher. e.g.:
-//
-//	var b = bagit.New("/path/to/bag", bagit.LookupHasher(bagit.HashMD5))
-func New(root string, hasher *Hasher) *Bag {
+// New returns Bag structure for processing the given root path. h must be a
+// valid hasher.Hasher, e.g. hasher.MD5(), hasher.SHA256(), etc.
+func New(root string, h *hasher.Hasher) *Bag {
 	return &Bag{
 		root:   root,
-		Hasher: hasher,
+		Hasher: h,
 		Cache:  noopCache{},
 	}
 }
@@ -196,19 +193,11 @@ func (b *Bag) getsum(path string) (*FileChecksum, error) {
 }
 
 func (b *Bag) compute(path string) (string, error) {
-	var f, err = os.Open(path)
+	var sum, err = b.Hasher.FileSum(path)
 	if err != nil {
-		return "", fmt.Errorf("cannot open %q: %s", path, err)
+		return "", fmt.Errorf("cannot compute checksum for %q: %s", path, err)
 	}
-	defer f.Close()
-
-	var h = b.Hasher.Hash()
-	_, err = io.Copy(h, f)
-	if err != nil {
-		return "", fmt.Errorf("cannot read %q for hashing: %s", path, err)
-	}
-
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
+	return sum, nil
 }
 
 func (b *Bag) manifestFilename() string {

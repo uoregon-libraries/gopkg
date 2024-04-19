@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/uoregon-libraries/gopkg/bagit"
+	"github.com/uoregon-libraries/gopkg/hasher"
 )
 
 func perr(msg string) {
@@ -35,42 +36,42 @@ func main() {
 
 	var op, algo, fname = os.Args[1], os.Args[2], os.Args[3]
 
-	var hasher *bagit.Hasher
+	var h *hasher.Hasher
 	switch algo {
 	case "md5":
-		hasher = bagit.Hash(bagit.MD5)
+		h = hasher.MD5()
 	case "sha1":
-		hasher = bagit.Hash(bagit.SHA1)
+		h = hasher.SHA1()
 	case "sha256":
-		hasher = bagit.Hash(bagit.SHA256)
+		h = hasher.SHA256()
 	case "sha512":
-		hasher = bagit.Hash(bagit.SHA512)
+		h = hasher.SHA512()
 	default:
 		usage("invalid algorithm: " + algo)
 	}
 
 	switch op {
 	case "write":
-		write(fname, hasher)
+		write(fname, h)
 	case "validate":
 		fmt.Println("Validating bag at ", fname)
-		validate(fname, hasher)
+		validate(fname, h)
 		fmt.Println("Valid")
 	default:
 		usage("invalid operation: " + op)
 	}
 }
 
-func write(path string, hasher *bagit.Hasher) {
-	var b = bagit.New(path, hasher)
+func write(path string, h *hasher.Hasher) {
+	var b = bagit.New(path, h)
 	var err = b.WriteTagFiles()
 	if err != nil {
 		perrf("Error generating tag files for %q: %s", path, err)
 	}
 }
 
-func validate(path string, hasher *bagit.Hasher) {
-	var b = bagit.New(path, hasher)
+func validate(path string, h *hasher.Hasher) {
+	var b = bagit.New(path, h)
 	var discrepancies, err = b.Validate()
 	if err != nil {
 		perrf("Error trying to validate %q: %s", path, err)
