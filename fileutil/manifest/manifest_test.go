@@ -219,7 +219,7 @@ func TestChange(t *testing.T) {
 
 func TestManifestWithHash(t *testing.T) {
 	var m = _m(t)
-	m.Hasher = hasher.SHA256()
+	m.Hasher = hasher.NewSHA256()
 
 	var err = m.Build()
 	if err != nil {
@@ -254,7 +254,7 @@ func TestManifestWithHash(t *testing.T) {
 func TestValidateOneSidedHash(t *testing.T) {
 	// Create a new manifest with a hash function and build it
 	var m = _m(t)
-	m.Hasher = hasher.SHA256()
+	m.Hasher = hasher.NewSHA256()
 
 	var err = m.Build()
 	if err != nil {

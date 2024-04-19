@@ -18,24 +18,52 @@ type Hasher struct {
 	Name string
 }
 
-// MD5 returns a Hasher using crypto/md5
-func MD5() *Hasher {
-	return &Hasher{md5.New(), "md5"}
+// Algo is our enum-like value for supported algorithms we use widely
+type Algo string
+
+// The algorithms we support currently
+const (
+	MD5    Algo = "md5"
+	SHA1        = "sha1"
+	SHA256      = "sha256"
+	SHA512      = "sha512"
+)
+
+var fnLookup = map[Algo]func() hash.Hash{
+	MD5:    md5.New,
+	SHA1:   sha1.New,
+	SHA256: sha256.New,
+	SHA512: sha512.New,
 }
 
-// SHA1 returns a Hasher using crypto/sha1
-func SHA1() *Hasher {
-	return &Hasher{sha1.New(), "sha1"}
+// NewMD5 returns a Hasher using crypto/md5
+func NewMD5() *Hasher {
+	return New(MD5)
 }
 
-// SHA256 returns a Hasher using crypto/sha256
-func SHA256() *Hasher {
-	return &Hasher{sha256.New(), "sha256"}
+// NewSHA1 returns a Hasher using crypto/sha1
+func NewSHA1() *Hasher {
+	return New(SHA1)
 }
 
-// SHA512 returns a Hasher using crypto/sha512
-func SHA512() *Hasher {
-	return &Hasher{sha512.New(), "sha512"}
+// NewSHA256 returns a Hasher using crypto/sha256
+func NewSHA256() *Hasher {
+	return New(SHA256)
+}
+
+// NewSHA512 returns a Hasher using crypto/sha512
+func NewSHA512() *Hasher {
+	return New(SHA512)
+}
+
+// New returns a Hasher for the given algorithm. If you pass in an invalid
+// Algo, this will give you a nil Hasher.
+func New(a Algo) *Hasher {
+	var fn, ok = fnLookup[a]
+	if !ok {
+		return nil
+	}
+	return &Hasher{Name: string(a), Hash: fn()}
 }
 
 // Sum resets Hasher's state and generates a hex sum of the given io.Reader

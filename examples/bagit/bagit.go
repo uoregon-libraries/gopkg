@@ -39,13 +39,13 @@ func main() {
 	var h *hasher.Hasher
 	switch algo {
 	case "md5":
-		h = hasher.MD5()
+		h = hasher.NewMD5()
 	case "sha1":
-		h = hasher.SHA1()
+		h = hasher.NewSHA1()
 	case "sha256":
-		h = hasher.SHA256()
+		h = hasher.NewSHA256()
 	case "sha512":
-		h = hasher.SHA512()
+		h = hasher.NewSHA512()
 	default:
 		usage("invalid algorithm: " + algo)
 	}
