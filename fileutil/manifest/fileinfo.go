@@ -2,12 +2,12 @@ package manifest
 
 import (
 	"fmt"
-	"hash"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/uoregon-libraries/gopkg/hasher"
 )
 
 // FileInfo represents basic information for a single file within a Manifest
@@ -42,26 +42,18 @@ func (fi FileInfo) Equal(b FileInfo) bool {
 	return true
 }
 
-func newFileInfo(loc string, e os.DirEntry, hsh hash.Hash) (FileInfo, error) {
+func newFileInfo(loc string, e os.DirEntry, h *hasher.Hasher) (FileInfo, error) {
 	var fullpath = filepath.Join(loc, e.Name())
 	var fd = FileInfo{Name: e.Name()}
 	var info, err = e.Info()
 	if err != nil {
 		return fd, fmt.Errorf("reading info for %q: %w", fullpath, err)
 	}
-	if hsh != nil {
-		var f, err = os.Open(fullpath)
-		if err != nil {
-			return fd, fmt.Errorf("opening %q: %w", fullpath, err)
-		}
-		defer f.Close()
-
-		hsh.Reset()
-		_, err = io.Copy(hsh, f)
+	if h != nil {
+		fd.Sum, err = h.FileSum(fullpath)
 		if err != nil {
 			return fd, fmt.Errorf("hashing %q: %w", fullpath, err)
 		}
-		fd.Sum = fmt.Sprintf("%x", hsh.Sum(nil))
 	}
 
 	fd.Size = info.Size()

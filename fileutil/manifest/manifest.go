@@ -3,12 +3,13 @@ package manifest
 import (
 	"encoding/json"
 	"fmt"
-	"hash"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
+
+	"github.com/uoregon-libraries/gopkg/hasher"
 )
 
 // Filename is the name used to store the Manifest JSON representation
@@ -26,15 +27,15 @@ const Filename = ".manifest"
 // effectively know when a directory was first seen, even if the files are all
 // very old (this can happen when moving a directory).
 //
-// Hash defaults to be unset, and in that state is unused. If manually set when
+// Hasher defaults to nil, and in that state is unused. If manually set when
 // building, a hash is stored along with the rest of the metadata. If a
-// manifest is created to read a file that has hash data, but the caller does
-// not specify a Hash, validation will ignore hashed file info.
+// manifest is created to read a file that has hash data, it is only validated
+// if the caller sets a hash with the same name.
 type Manifest struct {
 	path    string
 	Created time.Time
 	Files   []FileInfo
-	Hash    hash.Hash `json:"-"`
+	Hasher  *hasher.Hasher `json:"-"`
 }
 
 // New returns a Manifest ready for scanning a directory or reading an
@@ -62,7 +63,7 @@ func (m *Manifest) Build() error {
 			continue
 		}
 
-		var fd, err = newFileInfo(m.path, entry, m.Hash)
+		var fd, err = newFileInfo(m.path, entry, m.Hasher)
 		if err != nil {
 			return fmt.Errorf("reading dir %q: %w", m.path, err)
 		}

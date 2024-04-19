@@ -1,13 +1,14 @@
 package manifest
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/uoregon-libraries/gopkg/hasher"
 )
 
 func TestEquivalent(t *testing.T) {
@@ -218,7 +219,7 @@ func TestChange(t *testing.T) {
 
 func TestManifestWithHash(t *testing.T) {
 	var m = _m(t)
-	m.Hash = sha256.New()
+	m.Hasher = hasher.SHA256()
 
 	var err = m.Build()
 	if err != nil {
@@ -253,7 +254,7 @@ func TestManifestWithHash(t *testing.T) {
 func TestValidateOneSidedHash(t *testing.T) {
 	// Create a new manifest with a hash function and build it
 	var m = _m(t)
-	m.Hash = sha256.New()
+	m.Hasher = hasher.SHA256()
 
 	var err = m.Build()
 	if err != nil {
