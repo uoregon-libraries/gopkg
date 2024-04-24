@@ -3,6 +3,25 @@
 Starting with v0.24.0 I'm putting in a simple changelog because I'm starting to
 forget which things I changed and why, even in this tiny repo.
 
+# v0.27.0
+
+v0.26.0 was kind of a flop and immediately needed a fix, so don't use it.
+
+- bagit now requires a hash algorithm to be passed into `New` rather than
+  defaulting to SHA256.
+- bagit's Hasher is now in its own package, `hasher`, allowing non-bagit things
+  to make use of the same general-purpose file hashing.
+- fileutil/manifest has been massively refactored. There are two new top-level
+  methods, `Build` and `Open`; it supports optional file hashing for doing more
+  careful validation of a directory; and it has a whole suite of unit tests
+  finally.
+
+# v0.25.0
+
+bagit has been given a way to provide a cache to avoid recomputing expensive
+file checksums. By default no caching is done, and the API didn't change; a new
+field was simply added.
+
 # v0.24.0
 
 We've reverted the auto-retry behavior of `fileutil.SyncDirectory` added in
