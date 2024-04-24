@@ -149,9 +149,11 @@ func TestRead(t *testing.T) {
 		t.Fatalf("Unable to write fake manifest out: %s", err)
 	}
 
-	var m = _m(t)
-	m.Read()
-
+	var m *Manifest
+	m, err = Open(corpus.path)
+	if err != nil {
+		t.Fatalf("Unable to read manifest: %s", err)
+	}
 	if !m.Created.IsZero() {
 		t.Fatalf("Reading existing manifest didn't result in the expected fake time data")
 	}
