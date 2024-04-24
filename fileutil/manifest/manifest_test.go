@@ -149,9 +149,11 @@ func TestRead(t *testing.T) {
 		t.Fatalf("Unable to write fake manifest out: %s", err)
 	}
 
-	var m = _m(t)
-	m.Read()
-
+	var m *Manifest
+	m, err = Open(corpus.path)
+	if err != nil {
+		t.Fatalf("Unable to read manifest: %s", err)
+	}
 	if !m.Created.IsZero() {
 		t.Fatalf("Reading existing manifest didn't result in the expected fake time data")
 	}
@@ -219,7 +221,7 @@ func TestChange(t *testing.T) {
 
 func TestManifestWithHash(t *testing.T) {
 	var m = _m(t)
-	m.Hasher = hasher.SHA256()
+	m.Hasher = hasher.NewSHA256()
 
 	var err = m.Build()
 	if err != nil {
@@ -254,7 +256,7 @@ func TestManifestWithHash(t *testing.T) {
 func TestValidateOneSidedHash(t *testing.T) {
 	// Create a new manifest with a hash function and build it
 	var m = _m(t)
-	m.Hasher = hasher.SHA256()
+	m.Hasher = hasher.NewSHA256()
 
 	var err = m.Build()
 	if err != nil {

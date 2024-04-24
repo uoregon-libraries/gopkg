@@ -26,25 +26,54 @@ const Filename = ".manifest"
 // times. Additionally, the manifest stores its own creation time in order to
 // effectively know when a directory was first seen, even if the files are all
 // very old (this can happen when moving a directory).
-//
-// Hasher defaults to nil, and in that state is unused. If manually set when
-// building, a hash is stored along with the rest of the metadata. If a
-// manifest is created to read a file that has hash data, it is only validated
-// if the caller sets a hash with the same name.
 type Manifest struct {
-	path    string
-	Created time.Time
-	Files   []FileInfo
-	Hasher  *hasher.Hasher `json:"-"`
+	path     string
+	Created  time.Time
+	Files    []FileInfo
+	HashAlgo string
+	Hasher   *hasher.Hasher `json:"-"`
 }
 
-// New returns a Manifest ready for scanning a directory or reading an
-// existing manifest file.
+// New returns a Manifest ready for scanning a directory or reading an existing
+// manifest file. This should generally not be needed: Build and Open are
+// easier for typical use-cases.
 func New(location string) *Manifest {
 	return &Manifest{path: location, Created: time.Now()}
 }
 
-// Build reads all files in the manifest's path and builds our manifest data
+// Build reads files in the given location, builds a Manifest, and returns it
+// (or nil and an error)
+func Build(location string, a hasher.Algo) (*Manifest, error) {
+	var m = New(location)
+	m.Hasher = hasher.New(a)
+	var err = m.Build()
+	return m, err
+}
+
+// Open looks for a manifest file in the given location, and returns a Manifest
+// or an error (e.g., no manifest file existed)
+func Open(location string) (*Manifest, error) {
+	var m = &Manifest{path: location}
+	var data, err = ioutil.ReadFile(m.filename())
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(data, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	var h = hasher.New(hasher.Algo(m.HashAlgo))
+	if m.HashAlgo != "" && h == nil {
+		return nil, fmt.Errorf("reading %q: invalid hash algorithm (%q)", m.filename(), m.HashAlgo)
+	}
+	m.Hasher = h
+
+	return m, nil
+}
+
+// Build reads all files in the manifest's path and builds our manifest data.
 func (m *Manifest) Build() error {
 	var entries, err = os.ReadDir(m.path)
 	if err != nil {
@@ -72,28 +101,18 @@ func (m *Manifest) Build() error {
 	return nil
 }
 
-// Read replaces all file-level metadata with whatever is in the existing
-// manifest file, if anything
-func (m *Manifest) Read() error {
-	var data, err = ioutil.ReadFile(m.filename())
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(data, &m)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (m *Manifest) filename() string {
 	return filepath.Join(m.path, Filename)
 }
 
 // Write creates or replaces the manifest file with the current file metadata
 func (m *Manifest) Write() error {
+	// Ensure HashAlgo is set to the right value
+	m.HashAlgo = ""
+	if m.Hasher != nil {
+		m.HashAlgo = m.Hasher.Name
+	}
+
 	var data, err = json.Marshal(m)
 	if err != nil {
 		return err
@@ -105,6 +124,20 @@ func (m *Manifest) sortFiles() {
 	sort.Slice(m.Files, func(i, j int) bool {
 		return m.Files[i].Name < m.Files[j].Name
 	})
+}
+
+// Validate returns true if the current manifest matches what's actually in the
+// directory. Behind the scenes this just builds a new manifest with the same
+// path and hashing algorithm as m.
+//
+// This can return an error for the same reasons Build can: particularly if the
+// path is not valid or there are non-file directory entries in the path.
+func (m *Manifest) Validate() (bool, error) {
+	var m2, err = Build(m.path, hasher.Algo(m.HashAlgo))
+	if err != nil {
+		return false, err
+	}
+	return m.Equiv(m2), nil
 }
 
 // Equiv returns true if m and m2 have the *exact* same file lists.
