@@ -3,6 +3,14 @@
 Starting with v0.24.0 I'm putting in a simple changelog because I'm starting to
 forget which things I changed and why, even in this tiny repo.
 
+# v0.28.0
+
+- New hasher.FromString method for easier hasher.Hasher creation
+- fileutil/manifest API changed again - Build is now just a non-hashed
+  manifest; BuildHashed is how you say you want a hashed manifest.
+- manifest example now verifies if your algorithm is valid when doing a
+  `create-*` operation
+
 # v0.27.0
 
 v0.26.0 was kind of a flop and immediately needed a fix, so don't use it.
