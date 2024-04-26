@@ -52,7 +52,11 @@ func main() {
 func create(dirs []string, algo string) {
 	for _, dir := range dirs {
 		var start = time.Now()
-		var m, err = manifest.Build(dir, hasher.Algo(algo))
+		var h = hasher.FromString(algo)
+		if h == nil {
+			usage(fmt.Sprintf("Invalid hash algorithm %q", algo))
+		}
+		var m, err = manifest.BuildHashed(dir, h)
 		var duration = time.Since(start)
 		if err == nil {
 			err = m.Write()

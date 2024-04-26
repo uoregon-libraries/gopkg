@@ -43,9 +43,18 @@ func New(location string) *Manifest {
 
 // Build reads files in the given location, builds a Manifest, and returns it
 // (or nil and an error)
-func Build(location string, a hasher.Algo) (*Manifest, error) {
+func Build(location string) (*Manifest, error) {
+	return BuildHashed(location, nil)
+}
+
+// BuildHashed tries to build a manifest for the given location, hashing files
+// using the given hasher.Hasher (e.g., hasher.NewMD5())
+func BuildHashed(location string, h *hasher.Hasher) (*Manifest, error) {
 	var m = New(location)
-	m.Hasher = hasher.New(a)
+	m.Hasher = h
+	if h != nil {
+		m.HashAlgo = h.Name
+	}
 	var err = m.Build()
 	return m, err
 }
@@ -133,7 +142,7 @@ func (m *Manifest) sortFiles() {
 // This can return an error for the same reasons Build can: particularly if the
 // path is not valid or there are non-file directory entries in the path.
 func (m *Manifest) Validate() (bool, error) {
-	var m2, err = Build(m.path, hasher.Algo(m.HashAlgo))
+	var m2, err = BuildHashed(m.path, hasher.FromString(m.HashAlgo))
 	if err != nil {
 		return false, err
 	}

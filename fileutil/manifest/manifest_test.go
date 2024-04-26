@@ -79,14 +79,21 @@ func TestEquivalent(t *testing.T) {
 	}
 }
 
-func _m(t *testing.T) *Manifest {
+func testdir(t *testing.T) string {
 	var cwd, err = os.Getwd()
 	if err != nil {
 		t.Fatalf("Error getting current directory: %s", err)
-		return nil
+		return ""
 	}
-	var testdata = filepath.Join(cwd, "testdata")
-	return New(testdata)
+	return filepath.Join(cwd, "testdata")
+}
+
+func _build(t *testing.T) *Manifest {
+	var m, err = Build(testdir(t))
+	if err != nil {
+		t.Fatalf("Unable to build manifest: %s", err)
+	}
+	return m
 }
 
 func _mkf(name string, size int64, mode fs.FileMode) FileInfo {
@@ -107,12 +114,7 @@ var expectedFiles = []FileInfo{
 }
 
 func TestBuild(t *testing.T) {
-	var m = _m(t)
-	var err = m.Build()
-	if err != nil {
-		t.Fatalf("Unable to build manifest: %s", err)
-	}
-
+	var m = _build(t)
 	var expected = len(expectedFiles)
 	var got = len(m.Files)
 	if expected != got {
@@ -132,8 +134,7 @@ func TestBuild(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	var m = _m(t)
-	m.Build()
+	var m = _build(t)
 	var err = m.Write()
 	if err != nil {
 		t.Fatalf("Unable to write manifest: %s", err)
@@ -141,8 +142,7 @@ func TestWrite(t *testing.T) {
 }
 
 func TestRead(t *testing.T) {
-	var corpus = _m(t)
-	corpus.Build()
+	var corpus = _build(t)
 	corpus.Created = time.Time{}
 	var err = corpus.Write()
 	if err != nil {
@@ -194,14 +194,12 @@ func TestFileInfoEqual(t *testing.T) {
 }
 
 func TestChange(t *testing.T) {
-	var corpus = _m(t)
-	corpus.Build()
+	var corpus = _build(t)
 	corpus.Write()
 	var cwd, _ = os.Getwd()
 	var fname = filepath.Join(cwd, "testdata", "foo.dat")
 
-	var pre = _m(t)
-	pre.Build()
+	var pre = _build(t)
 	if !corpus.Equiv(pre) {
 		t.Fatalf("Pre-create, manifests should be the same")
 	}
@@ -212,20 +210,16 @@ func TestChange(t *testing.T) {
 	}
 	defer os.Remove(fname)
 
-	var post = _m(t)
-	post.Build()
+	var post = _build(t)
 	if corpus.Equiv(post) {
 		t.Fatalf("Post-create, manifests should differ")
 	}
 }
 
 func TestManifestWithHash(t *testing.T) {
-	var m = _m(t)
-	m.Hasher = hasher.NewSHA256()
-
-	var err = m.Build()
+	var m, err = BuildHashed(testdir(t), hasher.NewSHA256())
 	if err != nil {
-		t.Fatalf("Unable to build manifest with hash: %s", err)
+		t.Fatalf("Unable to build with hash: %s", err)
 	}
 
 	for _, f := range m.Files {
@@ -254,13 +248,9 @@ func TestManifestWithHash(t *testing.T) {
 }
 
 func TestValidateOneSidedHash(t *testing.T) {
-	// Create a new manifest with a hash function and build it
-	var m = _m(t)
-	m.Hasher = hasher.NewSHA256()
-
-	var err = m.Build()
+	var m, err = BuildHashed(testdir(t), hasher.NewSHA256())
 	if err != nil {
-		t.Fatalf("Unable to build manifest with hash: %s", err)
+		t.Fatalf("Unable to build with hash: %s", err)
 	}
 
 	// Set a bogus hash value so we know it will fail if both manifests are set
@@ -268,11 +258,7 @@ func TestValidateOneSidedHash(t *testing.T) {
 	m.Files[1].Sum = "foobar"
 
 	// Build manifest 2 - no checksum
-	var m2 = _m(t)
-	err = m2.Build()
-	if err != nil {
-		t.Fatalf("Unable to build manifest: %s", err)
-	}
+	var m2 = _build(t)
 
 	// Verify that the manifests are equivalent
 	if !m.Equiv(m2) {
