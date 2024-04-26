@@ -66,6 +66,14 @@ func New(a Algo) *Hasher {
 	return &Hasher{Name: string(a), Hash: fn()}
 }
 
+// FromString simplifies the case of just wanting to get a Hasher directly from
+// a string without the caller having to first cast it, while also making it
+// clear this is not the default way to get a Hasher, so you are far more
+// likely to get a nil value.
+func FromString(a string) *Hasher {
+	return New(Algo(a))
+}
+
 // Sum resets Hasher's state and generates a hex sum of the given io.Reader
 func (h *Hasher) Sum(r io.Reader) string {
 	h.Hash.Reset()

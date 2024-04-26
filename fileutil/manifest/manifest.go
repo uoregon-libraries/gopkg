@@ -64,7 +64,7 @@ func Open(location string) (*Manifest, error) {
 		return nil, err
 	}
 
-	var h = hasher.New(hasher.Algo(m.HashAlgo))
+	var h = hasher.FromString(m.HashAlgo)
 	if m.HashAlgo != "" && h == nil {
 		return nil, fmt.Errorf("reading %q: invalid hash algorithm (%q)", m.filename(), m.HashAlgo)
 	}
