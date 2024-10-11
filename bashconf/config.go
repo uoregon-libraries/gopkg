@@ -3,6 +3,7 @@ package bashconf
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -90,6 +91,16 @@ func (c *Config) readTaggedFields(dest interface{}) (errors []string) {
 			rVal.Field(i).SetString(val)
 			if !fileutil.IsDir(val) {
 				errors = append(errors, fmt.Sprintf("%#v (%#v) is not a directory", sKey, val))
+				continue
+			}
+		case "path,create":
+			rVal.Field(i).SetString(val)
+			if fileutil.IsDir(val) {
+				continue
+			}
+			var err = os.MkdirAll(val, 0755)
+			if err != nil {
+				errors = append(errors, fmt.Sprintf("%#v (%#v) is not a directory and couldn't be created: %s", sKey, val, err))
 				continue
 			}
 		case "file":
