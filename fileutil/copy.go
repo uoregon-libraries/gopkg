@@ -152,7 +152,7 @@ func copyRecursive(srcPath, dstPath string, cpFunc copyFunc) error {
 }
 
 // CopyFile attempts to copy the bytes from src into dst, returning an error if
-// applicable.  Does not use os.Link regardless of where the two files reside,
+// applicable. Does not use [os.Link] regardless of where the two files reside,
 // as that can cause massive confusion when copying a file in order to back it
 // up while writing out to the original.  The destination file permissions
 // aren't set here, and must be managed externally.
@@ -176,9 +176,9 @@ func CopyFile(src, dst string) error {
 	return copyFileContents(src, dst)
 }
 
-// CopyVerify copies the bytes from src into dst using CopyFile, then verifies
-// the two files have the same CRC32, giving a small measure of certainty that
-// the copy succeeded.
+// CopyVerify copies the bytes from src into dst using [CopyFile], then
+// verifies the two files have the same CRC32, giving a small measure of
+// certainty that the copy succeeded.
 func CopyVerify(src, dst string) error {
 	var err = CopyFile(src, dst)
 	if err != nil {
@@ -204,7 +204,7 @@ func CopyVerify(src, dst string) error {
 // copyFileContents actually copies bytes from src to dst.  On any error, an
 // attempt is made to clean up the state of the filesystem (though this is not
 // guaranteed) and the first error encountered is returned.  i.e., if there's a
-// failure in the io.Copy call, the caller will get that error, not the
+// failure in the [io.Copy] call, the caller will get that error, not the
 // potentially meaningless error in the call to close the destination file.
 func copyFileContents(src, dst string) error {
 	var srcFile, dstFile *os.File

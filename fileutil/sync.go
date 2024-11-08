@@ -20,7 +20,7 @@ func SyncDirectory(srcPath, dstPath string) error {
 
 // SyncDirectoryExcluding syncs files from srcPath to dstPath excluding files
 // which match any of the given patterns. Other than the exclusions, this is
-// precisely the same as SyncDirectory.
+// precisely the same as [SyncDirectory].
 func SyncDirectoryExcluding(srcPath, dstPath string, exclusionPatterns []string) error {
 	var err error
 

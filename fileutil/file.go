@@ -15,12 +15,12 @@ type File struct {
 	ModTime time.Time   // modification time
 }
 
-// InfoToFile converts a FileInfo interface into File data
+// InfoToFile converts a [os.FileInfo] interface into File data
 func InfoToFile(fi os.FileInfo) *File {
 	return &File{Name: fi.Name(), Size: fi.Size(), Mode: fi.Mode(), ModTime: fi.ModTime()}
 }
 
-// InfosToFiles converts a slice of FileInfos into a slice of Files
+// InfosToFiles converts a slice of [os.FileInfo]s into a slice of [File]s
 func InfosToFiles(fiList []os.FileInfo) []*File {
 	var files = make([]*File, len(fiList))
 	for i, fi := range fiList {

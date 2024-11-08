@@ -31,9 +31,9 @@ func nextSuffix() string {
 	return strconv.Itoa(int(1e9 + r%1e9))[1:]
 }
 
-// TempFile is a rewrite of the built-in Go function with a very important
-// addition: we can specify the file's extension.  This is crucial for
-// third-party binaries which rely on the extension of a file.
+// TempFile is a rewrite of [os.CreateTemp] with a very important addition: we
+// can specify the file's extension.  This is crucial for third-party binaries
+// which rely on the extension of a file.
 func TempFile(dir, prefix, ext string) (f *os.File, err error) {
 	if dir == "" {
 		dir = os.TempDir()

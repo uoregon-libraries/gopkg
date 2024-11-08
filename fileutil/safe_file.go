@@ -8,9 +8,9 @@ import (
 	"sync"
 )
 
-// WriteCancelCloser is an io.WriteCloser which also exposes a cancel method so
-// a writer can (attempt to) clean up anything it may have left behind in the
-// writing process when errors occurred.
+// WriteCancelCloser is an [io.WriteCloser] which also exposes a cancel method
+// so a writer can (attempt to) clean up anything it may have left behind in
+// the writing process when errors occurred.
 type WriteCancelCloser interface {
 	io.WriteCloser
 	Cancel()
@@ -35,7 +35,7 @@ type SafeFile struct {
 	closed    bool
 }
 
-// NewSafeFile returns a new SafeFile construct, wrapping the given path
+// NewSafeFile returns a new [SafeFile] construct, wrapping the given path
 func NewSafeFile(path string) *SafeFile {
 	var f, err = ioutil.TempFile("", "")
 	var sf = &SafeFile{temp: f, finalPath: path, Err: err}
@@ -58,9 +58,9 @@ func (f *SafeFile) Write(p []byte) (n int, err error) {
 	return n, f.Err
 }
 
-// WriteAt delegates to the temporary file handle so we can use a SafeFile when
-// WriteAt is used.  Since we check and store internal state (errors), this is
-// a mutex-locked operation even if writes could otherwise be concurrent.
+// WriteAt delegates to the temporary file handle so we can use a [SafeFile]
+// when WriteAt is used. Since we check and store internal state (errors), this
+// is a mutex-locked operation even if writes could otherwise be concurrent.
 func (f *SafeFile) WriteAt(p []byte, off int64) (n int, err error) {
 	f.Lock()
 	defer f.Unlock()

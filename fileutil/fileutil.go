@@ -59,7 +59,7 @@ func MustNotExist(path string) bool {
 	return err != nil && os.IsNotExist(err)
 }
 
-// ReaddirSorted calls ioutil.ReadDir and sorts the results
+// ReaddirSorted calls [ioutil.ReadDir] and sorts the results
 func ReaddirSorted(path string) ([]os.FileInfo, error) {
 	var fi, err = ioutil.ReadDir(path)
 	if err == nil {
@@ -69,7 +69,7 @@ func ReaddirSorted(path string) ([]os.FileInfo, error) {
 	return fi, err
 }
 
-// ReaddirSortedNumeric returns the results of ioutil.ReadDir sorted in a
+// ReaddirSortedNumeric returns the results of [ioutil.ReadDir] sorted in a
 // "human-friendly" way such that, e.g., 1.pdf is followed by 2.pdf, etc., and
 // then later on 10.pdf.  Similar to `sort -n`.
 func ReaddirSortedNumeric(path string) ([]os.FileInfo, error) {
@@ -82,21 +82,21 @@ func ReaddirSortedNumeric(path string) ([]os.FileInfo, error) {
 	return list, err
 }
 
-// byName implements sort.Interface for sorting os.FileInfo data by name
+// byName implements [sort.Interface] for sorting [os.FileInfo] data by name
 type byName []os.FileInfo
 
 func (n byName) Len() int           { return len(n) }
 func (n byName) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
 func (n byName) Less(i, j int) bool { return n[i].Name() < n[j].Name() }
 
-// SortFileInfos sorts a slice of os.FileInfo data by the underlying filename
+// SortFileInfos sorts a slice of [os.FileInfo] data by the underlying filename
 func SortFileInfos(list []os.FileInfo) {
 	sort.Sort(byName(list))
 }
 
-// SortFileInfosNumerically sorts a slice of os.FileInfo data by the underlying
-// filename, treating names as numeric where possible.  e.g., "1.pdf" and
-// "2.pdf" are both before "10.pdf".
+// SortFileInfosNumerically sorts a slice of [os.FileInfo] data by the
+// underlying filename, treating names as numeric where possible.  e.g.,
+// "1.pdf" and "2.pdf" are both before "10.pdf".
 func SortFileInfosNumerically(list []os.FileInfo) {
 	sort.Slice(list, numericInfoSortFn(list))
 }
@@ -104,8 +104,8 @@ func SortFileInfosNumerically(list []os.FileInfo) {
 // numberify stripts preceding zeros and everything after the first non-numeric
 // byte in order to make a string into a valid int
 //
-// This is basically a stripped-down Atoi that has no error cases and allows
-// things like "002312dafdsa.pdf" to return 2312.
+// This is basically a stripped-down [strconv.Atoi] that has no error cases and
+// allows things like "002312dafdsa.pdf" to return 2312.
 func numberify(s string) int {
 	s0 := s
 	if s[0] == '-' || s[0] == '+' {
