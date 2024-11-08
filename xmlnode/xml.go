@@ -1,4 +1,4 @@
-package xml
+package xmlnode
 
 import (
 	"encoding/xml"
